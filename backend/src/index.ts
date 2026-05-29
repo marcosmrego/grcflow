@@ -15,6 +15,9 @@ import {
 
 const app = express();
 
+// Confiar no proxy reverso do Coolify (Traefik)
+app.set('trust proxy', 1);
+
 // Security and parsing middleware
 app.use(helmet());
 app.use(cors({
