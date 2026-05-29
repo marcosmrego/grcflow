@@ -1,0 +1,13 @@
+[variables]
+# NODE_ENV=development durante o build para que npm ci instale devDependencies (TypeScript)
+NODE_ENV = "development"
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+# NODE_ENV=production injetado em runtime pelo Coolify via env vars
+cmd = "node dist/index.js"
