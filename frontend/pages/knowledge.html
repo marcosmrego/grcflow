@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Conhecimento - GRC Flow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">⚙️</span>
+                    <span class="logo-text">GRC Flow</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="knowledge.html" class="nav-link active">Base de Conhecimento</a></li>
+                <li><a href="flows.html" class="nav-link">Fluxos de Processos</a></li>
+                <li><a href="#" class="nav-link status-indicator">
+                    <span class="dot online"></span>
+                    <span id="api-status">Conectando...</span>
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>📚 Base de Conhecimento</h1>
+                    <p class="subtitle">Gerenciar políticas, procedimentos e documentação</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="Knowledge.openCreateModal()">
+                        + Novo Item
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filter Bar -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="search-input" 
+                                   placeholder="🔍 Buscar itens..." onkeyup="Knowledge.search()">
+                        </div>
+                        <div class="form-group">
+                            <select class="form-control" id="category-filter" onchange="Knowledge.filterByCategory()">
+                                <option value="">📂 Todas as categorias</option>
+                                <option value="Governance">Governance</option>
+                                <option value="Risk Management">Risk Management</option>
+                                <option value="Compliance">Compliance</option>
+                                <option value="Policies">Policies</option>
+                                <option value="Procedures">Procedures</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Container -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Itens de Conhecimento</h2>
+                    <span id="item-count" style="color: var(--text-secondary);">0 itens</span>
+                </div>
+                <div class="card-body">
+                    <div id="knowledge-list" class="items-list">
+                        <div class="loading">Carregando itens...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="knowledge-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Novo Item de Conhecimento</h2>
+                <button class="modal-close" onclick="Knowledge.closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="knowledge-form">
+                    <div class="form-group">
+                        <label for="kb-category">Categoria *</label>
+                        <select class="form-control" id="kb-category" required>
+                            <option value="">Selecione uma categoria</option>
+                            <option value="Governance">Governance</option>
+                            <option value="Risk Management">Risk Management</option>
+                            <option value="Compliance">Compliance</option>
+                            <option value="Policies">Policies</option>
+                            <option value="Procedures">Procedures</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="kb-title">Título *</label>
+                        <input type="text" class="form-control" id="kb-title" required 
+                               placeholder="Título do item de conhecimento">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="kb-description">Descrição *</label>
+                        <input type="text" class="form-control" id="kb-description" required 
+                               placeholder="Descrição breve">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="kb-content">Conteúdo *</label>
+                        <textarea class="form-control" id="kb-content" required 
+                                  placeholder="Conteúdo completo do documento"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="kb-tags">Tags (separadas por vírgula)</label>
+                        <input type="text" class="form-control" id="kb-tags" 
+                               placeholder="governance, approved, urgent">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="Knowledge.closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="Knowledge.save()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="view-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="view-title">Item de Conhecimento</h2>
+                <button class="modal-close" onclick="Knowledge.closeViewModal()">✕</button>
+            </div>
+            <div class="modal-body" id="view-content">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="delete-btn" onclick="Knowledge.deleteItem()">Deletar</button>
+                <button class="btn btn-secondary" onclick="Knowledge.closeViewModal()">Fechar</button>
+                <button class="btn btn-primary" onclick="Knowledge.editItem()">Editar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/knowledge.js"></script>
+</body>
+</html>

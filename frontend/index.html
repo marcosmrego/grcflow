@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRC Flow - Knowledge Base & Process Flows</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">⚙️</span>
+                    <span class="logo-text">GRC Flow</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link active">Dashboard</a></li>
+                <li><a href="pages/knowledge.html" class="nav-link">Base de Conhecimento</a></li>
+                <li><a href="pages/flows.html" class="nav-link">Fluxos de Processos</a></li>
+                <li><a href="#" class="nav-link status-indicator">
+                    <span class="dot online"></span>
+                    <span id="api-status">Conectando...</span>
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p class="subtitle">Visão geral do sistema GRC Flow</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='pages/knowledge.html'">
+                        + Novo Conhecimento
+                    </button>
+                    <button class="btn btn-success" onclick="window.location.href='pages/flows.html'">
+                        + Novo Fluxo
+                    </button>
+                </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon knowledge">📚</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="kb-count">-</div>
+                        <div class="stat-label">Itens de Conhecimento</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon flows">🔄</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="flows-count">-</div>
+                        <div class="stat-label">Fluxos de Processos</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon published">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="published-count">-</div>
+                        <div class="stat-label">Fluxos Publicados</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon draft">📝</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="draft-count">-</div>
+                        <div class="stat-label">Fluxos em Rascunho</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Sections -->
+            <div class="content-grid">
+                <!-- Recent Knowledge Items -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>📚 Conhecimento Recente</h2>
+                        <a href="pages/knowledge.html" class="link-more">Ver todos →</a>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-knowledge" class="items-list">
+                            <div class="loading">Carregando...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Flows -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>🔄 Fluxos Recentes</h2>
+                        <a href="pages/flows.html" class="link-more">Ver todos →</a>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-flows" class="items-list">
+                            <div class="loading">Carregando...</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Categories Section -->
+            <section class="card full-width">
+                <div class="card-header">
+                    <h2>🏷️ Categorias de Conhecimento</h2>
+                </div>
+                <div class="card-body">
+                    <div id="categories" class="categories-grid">
+                        <div class="loading">Carregando categorias...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Info -->
+            <section class="card full-width info-box">
+                <div class="card-header">
+                    <h2>ℹ️ Informações do Sistema</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">API Status:</span>
+                            <span class="info-value" id="api-info">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Última Atualização:</span>
+                            <span class="info-value" id="last-update">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">URL Base:</span>
+                            <span class="info-value" id="api-url">http://localhost:3000</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

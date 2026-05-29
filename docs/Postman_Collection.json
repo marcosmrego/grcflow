@@ -1,0 +1,314 @@
+{
+  "info": {
+    "name": "GRC Flow API",
+    "description": "Collection de testes para GRC Flow Knowledge Base e Process Flows",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Knowledge Base",
+      "item": [
+        {
+          "name": "Create Knowledge Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"category\": \"Governance\", \"title\": \"Board Charter\", \"description\": \"Board governance charter\", \"content\": \"The board is responsible for oversight of...\", \"tags\": [\"governance\", \"approved\"]}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge"]
+            }
+          }
+        },
+        {
+          "name": "List All Knowledge Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge?limit=50&offset=0",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Knowledge Item by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge/{{item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge", "{{item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Search Knowledge Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge/search?q=governance",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "governance"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by Category",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge/category/Governance?limit=20",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge", "category", "Governance"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get by Tag",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge/tag/approved",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge", "tag", "approved"]
+            }
+          }
+        },
+        {
+          "name": "Update Knowledge Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Updated Board Charter\", \"content\": \"Updated content here...\"}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge/{{item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge", "{{item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Knowledge Item",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3000/api/knowledge/{{item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "knowledge", "{{item_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Process Flows",
+      "item": [
+        {
+          "name": "Create Process Flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Risk Assessment Process\", \"description\": \"Process for quarterly risk assessments\", \"status\": \"draft\", \"metadata\": {\"department\": \"Risk Management\", \"frequency\": \"quarterly\"}}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/flows",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "flows"]
+            }
+          }
+        },
+        {
+          "name": "List Process Flows",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/flows?status=draft",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "flows"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "draft"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Process Flow by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/api/flows/{{flow_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "flows", "{{flow_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Step to Flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"order\": 1, \"title\": \"Identify Risks\", \"description\": \"Identify potential risks in the organization\", \"type\": \"action\", \"inputs\": {\"department\": \"string\"}, \"outputs\": {\"risks\": \"array\"}}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/flows/{{flow_id}}/steps",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "flows", "{{flow_id}}", "steps"]
+            }
+          }
+        },
+        {
+          "name": "Update Process Flow",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"published\", \"metadata\": {\"version\": \"1.0\"}}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/flows/{{flow_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "flows", "{{flow_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Process Flow",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3000/api/flows/{{flow_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "flows", "{{flow_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["health"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "flow_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

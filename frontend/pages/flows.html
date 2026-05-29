@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluxos de Processos - GRC Flow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/flows.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">⚙️</span>
+                    <span class="logo-text">GRC Flow</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="knowledge.html" class="nav-link">Base de Conhecimento</a></li>
+                <li><a href="flows.html" class="nav-link active">Fluxos de Processos</a></li>
+                <li><a href="#" class="nav-link status-indicator">
+                    <span class="dot online"></span>
+                    <span id="api-status">Conectando...</span>
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>🔄 Fluxos de Processos</h1>
+                    <p class="subtitle">Gerenciar processos e fluxos de trabalho</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="ProcessFlow.openCreateModal()">
+                        + Novo Fluxo
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filter Bar -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="search-input" 
+                                   placeholder="🔍 Buscar fluxos..." onkeyup="ProcessFlow.search()">
+                        </div>
+                        <div class="form-group">
+                            <select class="form-control" id="status-filter" onchange="ProcessFlow.filterByStatus()">
+                                <option value="">Todos os status</option>
+                                <option value="draft">📝 Rascunho</option>
+                                <option value="published">✅ Publicado</option>
+                                <option value="archived">📦 Arquivado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flows Container -->
+            <div id="flows-container">
+                <div class="loading">Carregando fluxos...</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Flow Modal -->
+    <div id="flow-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="flow-modal-title">Novo Fluxo de Processo</h2>
+                <button class="modal-close" onclick="ProcessFlow.closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="flow-form">
+                    <div class="form-group">
+                        <label for="flow-name">Nome do Fluxo *</label>
+                        <input type="text" class="form-control" id="flow-name" required 
+                               placeholder="Nome do fluxo de processo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="flow-description">Descrição</label>
+                        <textarea class="form-control" id="flow-description" 
+                                  placeholder="Descrição do fluxo"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="flow-status">Status</label>
+                        <select class="form-control" id="flow-status">
+                            <option value="draft">📝 Rascunho</option>
+                            <option value="published">✅ Publicado</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="ProcessFlow.closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="ProcessFlow.saveFlow()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Flow Modal -->
+    <div id="flow-view-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2 id="flow-view-title">Fluxo de Processo</h2>
+                <button class="modal-close" onclick="ProcessFlow.closeViewModal()">✕</button>
+            </div>
+            <div class="modal-body" id="flow-view-content" style="max-height: 60vh; overflow-y: auto;">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="ProcessFlow.deleteFlow()">Deletar</button>
+                <button class="btn btn-secondary" onclick="ProcessFlow.closeViewModal()">Fechar</button>
+                <button class="btn btn-primary" onclick="ProcessFlow.editFlow()">Editar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Step Modal -->
+    <div id="step-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Adicionar Passo ao Fluxo</h2>
+                <button class="modal-close" onclick="ProcessFlow.closeStepModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="step-form">
+                    <div class="form-group">
+                        <label for="step-order">Ordem *</label>
+                        <input type="number" class="form-control" id="step-order" required min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="step-title">Título *</label>
+                        <input type="text" class="form-control" id="step-title" required 
+                               placeholder="Título do passo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="step-description">Descrição</label>
+                        <textarea class="form-control" id="step-description" 
+                                  placeholder="Descrição do passo"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="step-type">Tipo *</label>
+                        <select class="form-control" id="step-type" required>
+                            <option value="">Selecione um tipo</option>
+                            <option value="action">⚙️ Ação</option>
+                            <option value="decision">🔀 Decisão</option>
+                            <option value="wait">⏳ Espera</option>
+                            <option value="notification">📢 Notificação</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="ProcessFlow.closeStepModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="ProcessFlow.saveStep()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/flows.js"></script>
+</body>
+</html>

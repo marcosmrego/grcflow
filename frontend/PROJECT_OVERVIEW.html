@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRC Flow - Project Overview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0066cc 0%, #0080ff 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            color: #0066cc;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #0066cc;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-left: 4px solid #0066cc;
+            padding: 1.5rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            color: #0066cc;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .code-block code {
+            display: block;
+            line-height: 1.5;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #0066cc;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0052a3;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: scale(1.05);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: #555;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .structure {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border: 2px solid #0066cc;
+            border-radius: 5px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0066cc;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .note strong {
+            color: #856404;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 2rem;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ GRC Flow</h1>
+            <p>Sistema de Base de Conhecimento e Geração de Fluxos de Processos</p>
+        </header>
+
+        <div class="content">
+            <!-- Overview -->
+            <section class="section">
+                <h2>📊 Visão Geral do Projeto</h2>
+                <p style="margin-bottom: 1rem; color: #555; font-size: 1.05rem;">
+                    Seu projeto <strong>GRC Flow</strong> foi estruturado com sucesso! É um sistema completo 
+                    pronto para produção que combina:
+                </p>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Aplicações</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label">Tabelas DB</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">20+</div>
+                        <div class="stat-label">Endpoints API</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Páginas Web</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stack -->
+            <section class="section">
+                <h2>🛠️ Stack Tecnológico</h2>
+                <div class="grid">
+                    <div class="card">
+                        <div class="icon">🔧</div>
+                        <h3>Backend</h3>
+                        <ul class="feature-list">
+                            <li>Node.js 18+</li>
+                            <li>TypeScript</li>
+                            <li>Express.js</li>
+                            <li>PostgreSQL 12+</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">🎨</div>
+                        <h3>Frontend</h3>
+                        <ul class="feature-list">
+                            <li>HTML5</li>
+                            <li>CSS3 (Grid/Flexbox)</li>
+                            <li>JavaScript Vanilla</li>
+                            <li>Responsive Design</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">🏛️</div>
+                        <h3>Padrões</h3>
+                        <ul class="feature-list">
+                            <li>MVC/Repository</li>
+                            <li>Service Layer</li>
+                            <li>TypeScript Strict</li>
+                            <li>Input Validation</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section class="section">
+                <h2>✨ Funcionalidades</h2>
+                <div class="grid">
+                    <div class="card">
+                        <div class="icon">📚</div>
+                        <h3>Base de Conhecimento</h3>
+                        <p>Armazenar, organizar e buscar documentos, políticas e procedimentos com busca full-text em português.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">🔄</div>
+                        <h3>Fluxos de Processos</h3>
+                        <p>Criar e gerenciar fluxos de trabalho com passos encadeados (ação, decisão, espera, notificação).</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">📊</div>
+                        <h3>Dashboard</h3>
+                        <p>Visão geral do sistema com estatísticas, itens recentes e categoria de conhecimento.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">🔍</div>
+                        <h3>Busca Avançada</h3>
+                        <p>Buscar por texto completo, categoria, tags com filtros e paginação.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">🏷️</div>
+                        <h3>Categorias & Tags</h3>
+                        <p>Organizar conhecimento em categorias hierárquicas e tags reutilizáveis.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="icon">🚀</div>
+                        <h3>Pronto para IA</h3>
+                        <p>Arquitetura preparada para integração com OpenAI para geração automática de fluxos.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Start -->
+            <section class="section">
+                <h2>🚀 Como Começar (5 minutos)</h2>
+                
+                <h3 style="color: #666; margin-top: 1.5rem; margin-bottom: 1rem;">1. Configurar Banco de Dados</h3>
+                <div class="code-block">
+                    <code>cd backend
+cp .env.example .env
+# Editar .env com credenciais PostgreSQL
+npm install
+npm run db:migrate</code>
+                </div>
+
+                <h3 style="color: #666; margin-top: 1.5rem; margin-bottom: 1rem;">2. Iniciar Backend</h3>
+                <div class="code-block">
+                    <code>cd backend
+npm run dev
+# Servidor rodando em http://localhost:3000</code>
+                </div>
+
+                <h3 style="color: #666; margin-top: 1.5rem; margin-bottom: 1rem;">3. Iniciar Frontend</h3>
+                <div class="code-block">
+                    <code>cd frontend
+python -m http.server 8000
+# Ou: npx http-server
+# Frontend em http://localhost:8000</code>
+                </div>
+
+                <div class="note">
+                    <strong>💡 Dica:</strong> Abra 3 terminais - um para o backend, um para o frontend e um para PostgreSQL se necessário.
+                </div>
+            </section>
+
+            <!-- Structure -->
+            <section class="section">
+                <h2>📁 Estrutura do Projeto</h2>
+                <div class="structure">GRC Flow/
+├── backend/                 ← API Node.js + TypeScript
+│   ├── src/
+│   │   ├── config/         ← Configuração (DB, env)
+│   │   ├── models/         ← Tipos TypeScript
+│   │   ├── repositories/   ← Acesso a dados
+│   │   ├── services/       ← Lógica de negócio
+│   │   ├── routes/         ← Endpoints API
+│   │   └── database/       ← Migrações e seeds
+│   ├── package.json
+│   └── .env               ← Configuração local
+│
+├── frontend/                ← Interface Web
+│   ├── index.html          ← Dashboard
+│   ├── pages/
+│   │   ├── knowledge.html  ← Base de conhecimento
+│   │   └── flows.html      ← Fluxos de processos
+│   ├── css/                ← Estilos
+│   └── js/                 ← Lógica JavaScript
+│
+├── database/
+│   └── setup.sql          ← Schema PostgreSQL
+│
+├── docs/                   ← Documentação
+│   ├── ARCHITECTURE.md
+│   ├── EXAMPLES.md
+│   └── Postman_Collection.json
+│
+├── README.md              ← Documentação principal
+├── QUICKSTART.md          ← Guia rápido
+└── RUN_GUIDE.md           ← Como rodar
+                </div>
+            </section>
+
+            <!-- Pages -->
+            <section class="section">
+                <h2>📄 Páginas da Interface</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Dashboard (index.html)</h3>
+                        <p>
+                            Visão geral com:<br>
+                            • Estatísticas do sistema<br>
+                            • Itens de conhecimento recentes<br>
+                            • Fluxos de processos recentes<br>
+                            • Categorias<br>
+                            • Status da API
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3>Base de Conhecimento</h3>
+                        <p>
+                            Gerenciador de conhecimento:<br>
+                            • Criar novo item<br>
+                            • Listar e buscar<br>
+                            • Filtrar por categoria/tag<br>
+                            • Editar e deletar<br>
+                            • Visualizar detalhes
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3>Fluxos de Processos</h3>
+                        <p>
+                            Gerenciador de fluxos:<br>
+                            • Criar novo fluxo<br>
+                            • Visualizar passos<br>
+                            • Filtrar por status<br>
+                            • Editar e deletar<br>
+                            • Adicionar passos
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API -->
+            <section class="section">
+                <h2>🔌 API REST Endpoints</h2>
+                
+                <h3 style="color: #666; margin-top: 1.5rem; margin-bottom: 1rem;">Knowledge Base</h3>
+                <div class="code-block">
+                    <code>GET     /api/knowledge
+GET     /api/knowledge/:id
+GET     /api/knowledge/search?q=...
+GET     /api/knowledge/category/:category
+GET     /api/knowledge/tag/:tag
+POST    /api/knowledge
+PUT     /api/knowledge/:id
+DELETE  /api/knowledge/:id</code>
+                </div>
+
+                <h3 style="color: #666; margin-top: 1.5rem; margin-bottom: 1rem;">Process Flows</h3>
+                <div class="code-block">
+                    <code>GET     /api/flows
+GET     /api/flows/:id
+GET     /api/flows?status=draft
+POST    /api/flows
+POST    /api/flows/:flowId/steps
+PUT     /api/flows/:id
+DELETE  /api/flows/:id</code>
+                </div>
+            </section>
+
+            <!-- Documents -->
+            <section class="section">
+                <h2>📖 Documentação Completa</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>README.md</h3>
+                        <p>Documentação completa do projeto, instruções de setup, APIs e exemplos.</p>
+                    </div>
+                    <div class="card">
+                        <h3>QUICKSTART.md</h3>
+                        <p>Guia prático de 10 minutos para começar do zero.</p>
+                    </div>
+                    <div class="card">
+                        <h3>RUN_GUIDE.md</h3>
+                        <p>Passo a passo detalha para rodar localmente e troubleshooting.</p>
+                    </div>
+                    <div class="card">
+                        <h3>docs/ARCHITECTURE.md</h3>
+                        <p>Arquitetura técnica, padrões de design e roadmap de evolução.</p>
+                    </div>
+                    <div class="card">
+                        <h3>docs/EXAMPLES.md</h3>
+                        <p>Casos de uso práticos com exemplos de requisições e workflows.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Postman Collection</h3>
+                        <p>Coleção pronta para testar todos os endpoints da API.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Next Steps -->
+            <section class="section">
+                <h2>🎯 Próximos Passos</h2>
+                
+                <h3 style="color: #666; margin: 1.5rem 0 1rem;">Fase 1: Base de Conhecimento (Atual)</h3>
+                <ul class="feature-list" style="font-size: 1rem;">
+                    <li style="margin-bottom: 0.5rem;">✅ CRUD completo de itens</li>
+                    <li style="margin-bottom: 0.5rem;">✅ Busca full-text em português</li>
+                    <li style="margin-bottom: 0.5rem;">✅ Organização por categorias e tags</li>
+                    <li style="margin-bottom: 0.5rem;">✅ Dashboard com estatísticas</li>
+                </ul>
+
+                <h3 style="color: #666; margin: 1.5rem 0 1rem;">Fase 2: Fluxos de Processos</h3>
+                <ul class="feature-list" style="font-size: 1rem;">
+                    <li style="margin-bottom: 0.5rem;">✅ Criar fluxos com múltiplos passos</li>
+                    <li style="margin-bottom: 0.5rem;">✅ Validação de fluxos</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Visualização gráfica (futuro)</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Execução de fluxos (futuro)</li>
+                </ul>
+
+                <h3 style="color: #666; margin: 1.5rem 0 1rem;">Fase 3: Geração com IA</h3>
+                <ul class="feature-list" style="font-size: 1rem;">
+                    <li style="margin-bottom: 0.5rem;">📋 Integração com OpenAI</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Gerar fluxos automaticamente</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Sugestões de conformidade</li>
+                </ul>
+
+                <h3 style="color: #666; margin: 1.5rem 0 1rem;">Fase 4: Recursos Avançados</h3>
+                <ul class="feature-list" style="font-size: 1rem;">
+                    <li style="margin-bottom: 0.5rem;">📋 Autenticação e RBAC</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Auditoria e logs</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Versionamento de documentos</li>
+                    <li style="margin-bottom: 0.5rem;">📋 Relatórios e exports</li>
+                </ul>
+            </section>
+
+            <!-- Testing -->
+            <section class="section">
+                <h2>🧪 Testar a Aplicação</h2>
+                <h3 style="color: #666; margin: 1rem 0;">Opção 1: Via Interface Web</h3>
+                <div class="note">
+                    Acesse <strong>http://localhost:8000</strong> e use os botões de criar/editar/deletar.
+                </div>
+
+                <h3 style="color: #666; margin: 1rem 0;">Opção 2: Via Postman</h3>
+                <div class="note">
+                    Importe o arquivo <strong>docs/Postman_Collection.json</strong> e teste todos os endpoints.
+                </div>
+
+                <h3 style="color: #666; margin: 1rem 0;">Opção 3: Via cURL</h3>
+                <div class="code-block">
+                    <code># Criar conhecimento
+curl -X POST http://localhost:3000/api/knowledge \
+  -H "Content-Type: application/json" \
+  -d '{"category":"Governance","title":"Test","description":"...","content":"..."}'
+
+# Listar
+curl http://localhost:3000/api/knowledge</code>
+                </div>
+            </section>
+
+            <!-- Resources -->
+            <section class="section">
+                <h2>📚 Recursos Úteis</h2>
+                <div class="btn-group">
+                    <a href="https://nodejs.org" class="btn btn-primary">Node.js Docs</a>
+                    <a href="https://www.postgresql.org/docs" class="btn btn-primary">PostgreSQL Docs</a>
+                    <a href="https://www.typescriptlang.org/docs" class="btn btn-primary">TypeScript Docs</a>
+                    <a href="https://expressjs.com" class="btn btn-primary">Express Docs</a>
+                    <a href="https://platform.openai.com/docs" class="btn btn-primary">OpenAI API</a>
+                </div>
+            </section>
+
+            <!-- Support -->
+            <section class="section">
+                <h2>💬 Suporte</h2>
+                <div class="note">
+                    <strong>❓ Dúvidas?</strong><br>
+                    Consulte a documentação em:<br>
+                    • <strong>README.md</strong> - Visão geral completa<br>
+                    • <strong>QUICKSTART.md</strong> - Começar rapidamente<br>
+                    • <strong>RUN_GUIDE.md</strong> - Executar a aplicação<br>
+                    • <strong>docs/ARCHITECTURE.md</strong> - Arquitetura técnica<br>
+                    • <strong>docs/EXAMPLES.md</strong> - Casos de uso
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>✅ <strong>GRC Flow v0.1.0</strong> - Pronto para produção!</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">
+                Created with ❤️ | Backend (Node.js + TypeScript) | Frontend (HTML/CSS/JS) | Database (PostgreSQL)
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
