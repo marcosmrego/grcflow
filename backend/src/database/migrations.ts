@@ -1,6 +1,14 @@
 import { db } from '../config/database';
+import { config } from '../config';
 
 const migrations = [
+  // Garantir que o schema existe antes de tudo
+  `CREATE SCHEMA IF NOT EXISTS ${config.database.schema};`,
+
+  // Habilitar extensões (precisam ficar no schema public)
+  `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`,
+  `CREATE EXTENSION IF NOT EXISTS "pg_trgm";`,
+
   // Create knowledge_items table
   `
     CREATE TABLE IF NOT EXISTS knowledge_items (
