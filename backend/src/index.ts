@@ -3,10 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import { config } from './config';
+import { runMigrations } from './database/migrations';
 import knowledgeRoutes from './routes/knowledge';
 import flowsRoutes from './routes/flows';
+import authRoutes from './routes/auth';
+import usersRoutes from './routes/users';
 import {
-  authMiddleware,
   auditContextMiddleware,
   generalLimiter,
   errorHandler,
@@ -15,63 +17,51 @@ import {
 
 const app = express();
 
-// Confiar no proxy reverso do Coolify (Traefik)
 app.set('trust proxy', 1);
 
-// Security and parsing middleware
 app.use(helmet());
-app.use(cors({
-  origin: config.cors.origin || '*',
-  credentials: true,
-}));
+app.use(cors({ origin: config.cors.origin || '*', credentials: true }));
 app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Audit and context middleware
 app.use(auditContextMiddleware);
 
-// Serve frontend static files
+// Frontend estático
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Health check (public endpoint)
-app.get('/health', (req, res) => {
-  res.json({ 
-    success: true,
-    data: {
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      environment: config.server.nodeEnv,
-    }
-  });
+// Health check
+app.get('/health', (_req, res) => {
+  res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString(), environment: config.server.nodeEnv } });
 });
 
-// API routes
+// API
+app.use('/api/auth', authRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/flows', flowsRoutes);
+app.use('/api/users', usersRoutes);
 
-// 404 handler (must be before error handler)
 app.use(notFoundHandler);
-
-// Error handling middleware (must be last)
 app.use(errorHandler);
 
 const PORT = config.server.port;
 
-app.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════╗
-║         🚀 GRC Flow API Started        ║
-╚════════════════════════════════════════╝
+async function start() {
+  try {
+    await runMigrations();
+    app.listen(PORT, () => {
+      console.log(`\n╔════════════════════════════════════════╗`);
+      console.log(`║         GRC Flow API Started           ║`);
+      console.log(`╚════════════════════════════════════════╝`);
+      console.log(`\nServer:   http://localhost:${PORT}`);
+      console.log(`Env:      ${config.server.nodeEnv}`);
+      console.log(`DB:       ${config.database.host}/${config.database.database} (schema: ${config.database.schema})`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+}
 
-Server:      http://localhost:${PORT}
-Environment: ${config.server.nodeEnv}
-Database:    ${config.database.host}:${config.database.port}/${config.database.database}
-CORS Origin: ${config.cors.origin || '*'}
-
-API Documentation: http://localhost:${PORT}/api/docs
-Health Check:      http://localhost:${PORT}/health
-  `);
-});
+start();
 
 export default app;

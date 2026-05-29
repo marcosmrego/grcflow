@@ -3,12 +3,36 @@
    =========================== */
 
 const API = {
-    // Usa caminho relativo em produção; localhost em dev
     baseURL: window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api',
+
+    getToken() { return localStorage.getItem('grc_token'); },
+    getUser()  { try { return JSON.parse(localStorage.getItem('grc_user') || 'null'); } catch { return null; } },
+
+    logout() {
+        localStorage.removeItem('grc_token');
+        localStorage.removeItem('grc_user');
+        window.location.href = '/login.html';
+    },
+
+    requireAuth() {
+        if (!this.getToken()) {
+            window.location.href = '/login.html';
+            return false;
+        }
+        return true;
+    },
 
     // Initialize
     init() {
+        this.requireAuth();
         this.checkHealth();
+        this.renderUserInfo();
+    },
+
+    renderUserInfo() {
+        const user = this.getUser();
+        const el = document.getElementById('user-info');
+        if (el && user) el.textContent = user.name || user.email;
     },
 
     // Health Check
@@ -127,20 +151,24 @@ const API = {
     // Helper Methods
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
+        const token = this.getToken();
         const headers = {
             'Content-Type': 'application/json',
-            ...options.headers
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...options.headers,
         };
 
         try {
-            const response = await fetch(url, {
-                ...options,
-                headers
-            });
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) {
+                this.logout();
+                return;
+            }
 
             if (!response.ok) {
                 const error = await response.json().catch(() => ({}));
-                throw new Error(error.error || `HTTP ${response.status}`);
+                throw new Error(error.error?.message || `HTTP ${response.status}`);
             }
 
             return await response.json();
