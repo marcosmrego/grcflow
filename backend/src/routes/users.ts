@@ -5,8 +5,8 @@ import {
   authMiddleware,
   requireAdmin,
   asyncHandler,
-  ApiResponse,
 } from '../middleware';
+import { ApiResponse } from '../models/types';
 
 const router = express.Router();
 
@@ -195,7 +195,7 @@ router.delete(
 
     await userService.deleteUser(req.params.id, req.user.id);
 
-    const response: ApiResponse<null> = {
+    const response: ApiResponse<{ message: string }> = {
       success: true,
       data: {
         message: 'User deleted successfully',

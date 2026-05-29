@@ -1,14 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { AuthService } from './AuthService';
 import { userRepository } from '../repositories/UserRepository';
-import {
-  User,
-  AuthTokens,
-  UserPayload,
-  ValidationError,
-  AuthenticationError,
-  ConflictError,
-} from '../models/types';
+import { User, AuthTokens, UserPayload } from '../models/types';
+import { ValidationError, AuthenticationError, ConflictError } from '../middleware';
 
 interface LoginRequest {
   email: string;

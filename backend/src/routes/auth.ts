@@ -6,9 +6,9 @@ import {
   authLimiter,
   moderateLimiter,
   asyncHandler,
-  ApiResponse,
   AuthenticationError,
 } from '../middleware';
+import { ApiResponse } from '../models/types';
 
 const router = express.Router();
 
@@ -157,7 +157,7 @@ router.post(
     // 2. Add token to blacklist
     // For now, logout is handled on client by removing tokens
 
-    const response: ApiResponse<null> = {
+    const response: ApiResponse<{ message: string }> = {
       success: true,
       data: {
         message: 'Logged out successfully',
@@ -257,7 +257,7 @@ router.post(
       req.body.newPassword
     );
 
-    const response: ApiResponse<null> = {
+    const response: ApiResponse<{ message: string }> = {
       success: true,
       data: {
         message: 'Password changed successfully',
