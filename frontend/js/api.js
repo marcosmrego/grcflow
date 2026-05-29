@@ -3,8 +3,9 @@
    =========================== */
 
 const API = {
-    baseURL: 'http://localhost:3000/api',
-    
+    // Usa caminho relativo em produção; localhost em dev
+    baseURL: window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api',
+
     // Initialize
     init() {
         this.checkHealth();
@@ -12,8 +13,11 @@ const API = {
 
     // Health Check
     async checkHealth() {
+        const healthURL = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000/health'
+            : '/health';
         try {
-            const response = await fetch('http://localhost:3000/health');
+            const response = await fetch(healthURL);
             if (response.ok) {
                 this.updateStatus(true);
                 return true;

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import { config } from './config';
 import knowledgeRoutes from './routes/knowledge';
 import flowsRoutes from './routes/flows';
@@ -26,6 +27,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Audit and context middleware
 app.use(auditContextMiddleware);
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Health check (public endpoint)
 app.get('/health', (req, res) => {

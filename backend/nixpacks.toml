@@ -6,7 +6,7 @@ NODE_ENV = "development"
 cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["npm run build", "cp -r ../frontend ./public"]
 
 [start]
 # NODE_ENV=production injetado em runtime pelo Coolify via env vars
