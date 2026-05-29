@@ -2,6 +2,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Forçar development no build para que npm ci instale devDependencies (TypeScript)
+ENV NODE_ENV=development
+
 # Instalar dependências
 COPY backend/package*.json ./
 RUN npm ci
