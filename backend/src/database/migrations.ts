@@ -149,16 +149,18 @@ const migrations = [
     EXECUTE FUNCTION ${schema}.update_updated_at_column();
   `,
 
-  // Admin inicial (senha: Admin@123)
+  // Admin inicial (senha: 123456)
   `
   INSERT INTO users (email, name, password_hash, role, is_active)
   VALUES (
     'admin@grcflow.local',
     'Administrator',
-    '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
     'admin',
     TRUE
-  ) ON CONFLICT (email) DO NOTHING;
+  ) ON CONFLICT (email) DO UPDATE SET
+    password_hash = '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
+    is_active = TRUE;
   `,
 ];
 
