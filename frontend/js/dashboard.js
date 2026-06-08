@@ -5,6 +5,7 @@
 const Dashboard = {
     async init() {
         this.setupEventListeners();
+        await this.loadCompanyInfo();
         await this.loadStats();
         await this.loadRecentKnowledge();
         await this.loadRecentFlows();
@@ -62,6 +63,20 @@ const Dashboard = {
                 if (!card) return;
                 window.location.href = `pages/knowledge.html?category=${encodeURIComponent(card.dataset.category)}`;
             });
+        }
+    },
+
+    async loadCompanyInfo() {
+        try {
+            const result = await API.request('/auth/me');
+            const companyName = result.data && result.data.companyName;
+            const el = document.getElementById('company-name');
+            if (el && companyName) {
+                el.querySelector('strong').textContent = companyName;
+                el.style.display = '';
+            }
+        } catch (error) {
+            console.error('Error loading company info:', error);
         }
     },
 

@@ -44,6 +44,11 @@ const API = {
         const user = this.getUser();
         const el = document.getElementById('user-info');
         if (el && user) el.textContent = user.name || user.email;
+
+        const usersNavItem = document.getElementById('nav-users-item');
+        if (usersNavItem) {
+            usersNavItem.style.display = (user && user.role === 'admin') ? '' : 'none';
+        }
     },
 
     // Health Check
@@ -157,6 +162,35 @@ const API = {
             method: 'POST',
             body: JSON.stringify(stepData)
         });
+    },
+
+    // Company Users (admin only — scoped to the authenticated user's company)
+    async getUsers(page = 1, limit = 50) {
+        const result = await this.request(`/users?page=${page}&limit=${limit}`);
+        return result.data;
+    },
+
+    async createUser(data) {
+        const result = await this.request('/users', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        return result.data;
+    },
+
+    async updateUser(id, data) {
+        const result = await this.request(`/users/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        return result.data;
+    },
+
+    async deleteUser(id) {
+        const result = await this.request(`/users/${id}`, {
+            method: 'DELETE'
+        });
+        return result.data;
     },
 
     // Helper Methods

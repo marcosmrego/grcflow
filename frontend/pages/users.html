@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários - GRC Flow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">⚙️</span>
+                    <span class="logo-text">GRC Flow</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="knowledge.html" class="nav-link">Base de Conhecimento</a></li>
+                <li><a href="flows.html" class="nav-link">Fluxos de Processos</a></li>
+                <li id="nav-users-item"><a href="users.html" class="nav-link active">Usuários</a></li>
+                <li><a href="#" class="nav-link status-indicator">
+                    <span class="dot online"></span>
+                    <span id="api-status">Conectando...</span>
+                </a></li>
+                <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
+                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>👥 Usuários</h1>
+                    <p class="subtitle">Gerenciar os usuários da sua empresa</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-new-user">
+                        + Novo Usuário
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filter Bar -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="search-input"
+                                   placeholder="🔍 Buscar usuários por nome ou e-mail...">
+                        </div>
+                        <div class="form-group">
+                            <select class="form-control" id="role-filter">
+                                <option value="">👤 Todos os papéis</option>
+                                <option value="admin">Administrador</option>
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Visualizador</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Container -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Usuários da Empresa</h2>
+                    <span id="user-count" style="color: var(--text-secondary);">0 usuários</span>
+                </div>
+                <div class="card-body">
+                    <div id="users-list" class="items-list">
+                        <div class="loading">Carregando usuários...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="user-modal-title">Novo Usuário</h2>
+                <button class="modal-close" id="user-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="user-form">
+                    <div class="form-group">
+                        <label for="user-name">Nome *</label>
+                        <input type="text" class="form-control" id="user-name" required
+                               placeholder="Nome completo">
+                    </div>
+
+                    <div class="form-group" id="user-email-group">
+                        <label for="user-email">E-mail *</label>
+                        <input type="email" class="form-control" id="user-email" required
+                               placeholder="usuario@empresa.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-role">Papel *</label>
+                        <select class="form-control" id="user-role" required>
+                            <option value="admin">Administrador</option>
+                            <option value="editor">Editor</option>
+                            <option value="viewer">Visualizador</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="user-password-group">
+                        <label for="user-password">Senha</label>
+                        <input type="password" class="form-control" id="user-password"
+                               placeholder="Mínimo de 8 caracteres (opcional)">
+                    </div>
+
+                    <div class="form-group" id="user-active-group" style="display: none;">
+                        <label for="user-active">Status</label>
+                        <select class="form-control" id="user-active">
+                            <option value="true">✅ Ativo</option>
+                            <option value="false">⛔ Inativo</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="user-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="user-modal-save">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/users.js"></script>
+</body>
+</html>

@@ -160,14 +160,19 @@ export class UserService {
   /**
    * Get user profile
    */
-  async getProfile(userId: string): Promise<UserPayload> {
+  async getProfile(userId: string): Promise<UserPayload & { companyName: string }> {
     const user = await userRepository.findById(userId);
 
     if (!user) {
       throw new AuthenticationError('User not found');
     }
 
-    return AuthService.toUserPayload(user);
+    const company = await companyRepository.findById(user.company_id);
+
+    return {
+      ...AuthService.toUserPayload(user),
+      companyName: company?.name || '',
+    };
   }
 
   /**
@@ -228,13 +233,17 @@ export class UserService {
    * Get all users of a company (admin only)
    */
   async listUsers(companyId: string, limit: number = 20, offset: number = 0): Promise<{
-    users: UserPayload[];
+    users: Array<UserPayload & { is_active: boolean; created_at: Date }>;
     total: number;
   }> {
     const { users, total } = await userRepository.listByCompany(companyId, limit, offset);
 
     return {
-      users: users.map((user) => AuthService.toUserPayload(user)),
+      users: users.map((user) => ({
+        ...AuthService.toUserPayload(user),
+        is_active: user.is_active,
+        created_at: user.created_at,
+      })),
       total,
     };
   }
