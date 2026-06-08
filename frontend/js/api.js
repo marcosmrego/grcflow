@@ -27,6 +27,17 @@ const API = {
         this.requireAuth();
         this.checkHealth();
         this.renderUserInfo();
+        this.bindLogout();
+    },
+
+    bindLogout() {
+        const link = document.getElementById('logout-link');
+        if (link) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.logout();
+            });
+        }
     },
 
     renderUserInfo() {

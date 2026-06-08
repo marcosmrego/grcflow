@@ -26,7 +26,7 @@
                     <span id="api-status">Conectando...</span>
                 </a></li>
                 <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
-                <li><a href="#" class="nav-link" onclick="API.logout();return false;">Sair</a></li>
+                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
             </ul>
         </nav>
 
@@ -39,10 +39,10 @@
                     <p class="subtitle">Visão geral do sistema GRC Flow</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-primary" onclick="window.location.href='pages/knowledge.html'">
+                    <button class="btn btn-primary" id="btn-new-knowledge">
                         + Novo Conhecimento
                     </button>
-                    <button class="btn btn-success" onclick="window.location.href='pages/flows.html'">
+                    <button class="btn btn-success" id="btn-new-flow">
                         + Novo Fluxo
                     </button>
                 </div>

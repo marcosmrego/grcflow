@@ -19,6 +19,48 @@ const Knowledge = {
                 this.save();
             });
         }
+
+        const newItemBtn = document.getElementById('btn-new-item');
+        if (newItemBtn) newItemBtn.addEventListener('click', () => this.openCreateModal());
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.addEventListener('keyup', () => this.search());
+
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) categoryFilter.addEventListener('change', () => this.filterByCategory());
+
+        const modalClose = document.getElementById('kb-modal-close');
+        if (modalClose) modalClose.addEventListener('click', () => this.closeModal());
+
+        const modalCancel = document.getElementById('kb-modal-cancel');
+        if (modalCancel) modalCancel.addEventListener('click', () => this.closeModal());
+
+        const modalSave = document.getElementById('kb-modal-save');
+        if (modalSave) modalSave.addEventListener('click', () => this.save());
+
+        const viewModalClose = document.getElementById('kb-view-modal-close');
+        if (viewModalClose) viewModalClose.addEventListener('click', () => this.closeViewModal());
+
+        const viewModalCloseFooter = document.getElementById('kb-view-modal-close-footer');
+        if (viewModalCloseFooter) viewModalCloseFooter.addEventListener('click', () => this.closeViewModal());
+
+        const viewModalEdit = document.getElementById('kb-view-modal-edit');
+        if (viewModalEdit) viewModalEdit.addEventListener('click', () => this.editItem());
+
+        const list = document.getElementById('knowledge-list');
+        if (list) {
+            list.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                switch (btn.dataset.action) {
+                    case 'create': this.openCreateModal(); break;
+                    case 'view': this.viewItem(id); break;
+                    case 'edit': this.editFromId(id); break;
+                    case 'delete': this.confirmDelete(id); break;
+                }
+            });
+        }
     },
 
     async loadItems(limit = 100) {
@@ -39,7 +81,7 @@ const Knowledge = {
                         <div class="empty-state-icon">📚</div>
                         <div class="empty-state-title">Nenhum item de conhecimento</div>
                         <p class="empty-state-text">Comece adicionando itens à sua base de conhecimento</p>
-                        <button class="btn btn-primary" onclick="Knowledge.openCreateModal()">
+                        <button class="btn btn-primary" data-action="create">
                             + Criar Primeiro Item
                         </button>
                     </div>
@@ -62,9 +104,9 @@ const Knowledge = {
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="item-action" title="Ver detalhes" onclick="Knowledge.viewItem('${item.id}')">👁️</button>
-                        <button class="item-action" title="Editar" onclick="Knowledge.editFromId('${item.id}')">✏️</button>
-                        <button class="item-action" title="Deletar" onclick="Knowledge.confirmDelete('${item.id}')">🗑️</button>
+                        <button class="item-action" title="Ver detalhes" data-action="view" data-id="${item.id}">👁️</button>
+                        <button class="item-action" title="Editar" data-action="edit" data-id="${item.id}">✏️</button>
+                        <button class="item-action" title="Deletar" data-action="delete" data-id="${item.id}">🗑️</button>
                     </div>
                 </div>
             `).join('');
@@ -117,8 +159,8 @@ const Knowledge = {
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="item-action" onclick="Knowledge.viewItem('${item.id}')">👁️</button>
-                        <button class="item-action" onclick="Knowledge.editFromId('${item.id}')">✏️</button>
+                        <button class="item-action" data-action="view" data-id="${item.id}">👁️</button>
+                        <button class="item-action" data-action="edit" data-id="${item.id}">✏️</button>
                     </div>
                 </div>
             `).join('');
@@ -166,8 +208,8 @@ const Knowledge = {
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="item-action" onclick="Knowledge.viewItem('${item.id}')">👁️</button>
-                        <button class="item-action" onclick="Knowledge.editFromId('${item.id}')">✏️</button>
+                        <button class="item-action" data-action="view" data-id="${item.id}">👁️</button>
+                        <button class="item-action" data-action="edit" data-id="${item.id}">✏️</button>
                     </div>
                 </div>
             `).join('');

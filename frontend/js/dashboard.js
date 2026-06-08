@@ -4,11 +4,65 @@
 
 const Dashboard = {
     async init() {
+        this.setupEventListeners();
         await this.loadStats();
         await this.loadRecentKnowledge();
         await this.loadRecentFlows();
         await this.loadCategories();
         this.updateLastUpdate();
+    },
+
+    setupEventListeners() {
+        const newKnowledgeBtn = document.getElementById('btn-new-knowledge');
+        if (newKnowledgeBtn) {
+            newKnowledgeBtn.addEventListener('click', () => {
+                window.location.href = 'pages/knowledge.html';
+            });
+        }
+
+        const newFlowBtn = document.getElementById('btn-new-flow');
+        if (newFlowBtn) {
+            newFlowBtn.addEventListener('click', () => {
+                window.location.href = 'pages/flows.html';
+            });
+        }
+
+        const recentKnowledge = document.getElementById('recent-knowledge');
+        if (recentKnowledge) {
+            recentKnowledge.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.dataset.action === 'view-knowledge') {
+                    window.location.href = `pages/knowledge.html?id=${id}`;
+                } else if (btn.dataset.action === 'edit-knowledge') {
+                    console.log(`Edit: ${id}`);
+                }
+            });
+        }
+
+        const recentFlows = document.getElementById('recent-flows');
+        if (recentFlows) {
+            recentFlows.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                if (btn.dataset.action === 'view-flow') {
+                    window.location.href = `pages/flows.html?id=${id}`;
+                } else if (btn.dataset.action === 'edit-flow') {
+                    console.log(`Edit: ${id}`);
+                }
+            });
+        }
+
+        const categories = document.getElementById('categories');
+        if (categories) {
+            categories.addEventListener('click', (e) => {
+                const card = e.target.closest('[data-category]');
+                if (!card) return;
+                window.location.href = `pages/knowledge.html?category=${encodeURIComponent(card.dataset.category)}`;
+            });
+        }
     },
 
     async loadStats() {
@@ -73,8 +127,8 @@ const Dashboard = {
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="item-action" title="Ver detalhes" onclick="window.location.href='pages/knowledge.html?id=${item.id}'">👁️</button>
-                        <button class="item-action" title="Editar" onclick="console.log('Edit: ${item.id}')">✏️</button>
+                        <button class="item-action" title="Ver detalhes" data-action="view-knowledge" data-id="${item.id}">👁️</button>
+                        <button class="item-action" title="Editar" data-action="edit-knowledge" data-id="${item.id}">✏️</button>
                     </div>
                 </div>
             `).join('');
@@ -108,8 +162,8 @@ const Dashboard = {
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="item-action" title="Ver detalhes" onclick="window.location.href='pages/flows.html?id=${flow.id}'">👁️</button>
-                        <button class="item-action" title="Editar" onclick="console.log('Edit: ${flow.id}')">✏️</button>
+                        <button class="item-action" title="Ver detalhes" data-action="view-flow" data-id="${flow.id}">👁️</button>
+                        <button class="item-action" title="Editar" data-action="edit-flow" data-id="${flow.id}">✏️</button>
                     </div>
                 </div>
             `).join('');
@@ -132,7 +186,7 @@ const Dashboard = {
             ];
 
             container.innerHTML = categories.map(cat => `
-                <div class="category-card" onclick="window.location.href='pages/knowledge.html?category=${encodeURIComponent(cat.name)}'">
+                <div class="category-card" data-category="${cat.name}">
                     <div class="category-icon">${cat.icon}</div>
                     <div class="category-name">${cat.name}</div>
                 </div>

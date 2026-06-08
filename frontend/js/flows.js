@@ -7,7 +7,80 @@ const ProcessFlow = {
     editingFlowId: null,
 
     async init() {
+        this.setupEventListeners();
         await this.loadFlows();
+    },
+
+    setupEventListeners() {
+        const form = document.getElementById('flow-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveFlow();
+            });
+        }
+
+        const stepForm = document.getElementById('step-form');
+        if (stepForm) {
+            stepForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveStep();
+            });
+        }
+
+        const newFlowBtn = document.getElementById('btn-new-flow');
+        if (newFlowBtn) newFlowBtn.addEventListener('click', () => this.openCreateModal());
+
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.addEventListener('keyup', () => this.search());
+
+        const statusFilter = document.getElementById('status-filter');
+        if (statusFilter) statusFilter.addEventListener('change', () => this.filterByStatus());
+
+        const modalClose = document.getElementById('flow-modal-close');
+        if (modalClose) modalClose.addEventListener('click', () => this.closeModal());
+
+        const modalCancel = document.getElementById('flow-modal-cancel');
+        if (modalCancel) modalCancel.addEventListener('click', () => this.closeModal());
+
+        const modalSave = document.getElementById('flow-modal-save');
+        if (modalSave) modalSave.addEventListener('click', () => this.saveFlow());
+
+        const viewModalClose = document.getElementById('flow-view-modal-close');
+        if (viewModalClose) viewModalClose.addEventListener('click', () => this.closeViewModal());
+
+        const viewModalDelete = document.getElementById('flow-view-modal-delete');
+        if (viewModalDelete) viewModalDelete.addEventListener('click', () => this.deleteFlow());
+
+        const viewModalCloseFooter = document.getElementById('flow-view-modal-close-footer');
+        if (viewModalCloseFooter) viewModalCloseFooter.addEventListener('click', () => this.closeViewModal());
+
+        const viewModalEdit = document.getElementById('flow-view-modal-edit');
+        if (viewModalEdit) viewModalEdit.addEventListener('click', () => this.editFlow());
+
+        const stepModalClose = document.getElementById('step-modal-close');
+        if (stepModalClose) stepModalClose.addEventListener('click', () => this.closeStepModal());
+
+        const stepModalCancel = document.getElementById('step-modal-cancel');
+        if (stepModalCancel) stepModalCancel.addEventListener('click', () => this.closeStepModal());
+
+        const stepModalSave = document.getElementById('step-modal-save');
+        if (stepModalSave) stepModalSave.addEventListener('click', () => this.saveStep());
+
+        const container = document.getElementById('flows-container');
+        if (container) {
+            container.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const id = btn.dataset.id;
+                switch (btn.dataset.action) {
+                    case 'create': this.openCreateModal(); break;
+                    case 'view': this.viewFlow(id); break;
+                    case 'edit': this.editFlowById(id); break;
+                    case 'delete': this.confirmDelete(id); break;
+                }
+            });
+        }
     },
 
     async loadFlows() {
@@ -23,7 +96,7 @@ const ProcessFlow = {
                         <div class="empty-flows-icon">🔄</div>
                         <div class="empty-flows-title">Nenhum fluxo de processo</div>
                         <p class="empty-flows-text">Comece criando seu primeiro fluxo de trabalho</p>
-                        <button class="btn btn-primary" onclick="ProcessFlow.openCreateModal()">
+                        <button class="btn btn-primary" data-action="create">
                             + Criar Primeiro Fluxo
                         </button>
                     </div>
@@ -61,9 +134,9 @@ const ProcessFlow = {
                         </div>
                     </div>
                     <div class="flow-actions">
-                        <button class="flow-action-btn" title="Ver detalhes" onclick="ProcessFlow.viewFlow('${flow.id}')">👁️</button>
-                        <button class="flow-action-btn" title="Editar" onclick="ProcessFlow.editFlowById('${flow.id}')">✏️</button>
-                        <button class="flow-action-btn" title="Deletar" onclick="ProcessFlow.confirmDelete('${flow.id}')">🗑️</button>
+                        <button class="flow-action-btn" title="Ver detalhes" data-action="view" data-id="${flow.id}">👁️</button>
+                        <button class="flow-action-btn" title="Editar" data-action="edit" data-id="${flow.id}">✏️</button>
+                        <button class="flow-action-btn" title="Deletar" data-action="delete" data-id="${flow.id}">🗑️</button>
                     </div>
                 </div>
             </div>

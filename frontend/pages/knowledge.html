@@ -26,7 +26,7 @@
                     <span id="api-status">Conectando...</span>
                 </a></li>
                 <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
-                <li><a href="#" class="nav-link" onclick="API.logout();return false;">Sair</a></li>
+                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
             </ul>
         </nav>
 
@@ -39,7 +39,7 @@
                     <p class="subtitle">Gerenciar políticas, procedimentos e documentação</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-primary" onclick="Knowledge.openCreateModal()">
+                    <button class="btn btn-primary" id="btn-new-item">
                         + Novo Item
                     </button>
                 </div>
@@ -50,11 +50,11 @@
                 <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <input type="text" class="form-control" id="search-input" 
-                                   placeholder="🔍 Buscar itens..." onkeyup="Knowledge.search()">
+                            <input type="text" class="form-control" id="search-input"
+                                   placeholder="🔍 Buscar itens...">
                         </div>
                         <div class="form-group">
-                            <select class="form-control" id="category-filter" onchange="Knowledge.filterByCategory()">
+                            <select class="form-control" id="category-filter">
                                 <option value="">📂 Todas as categorias</option>
                                 <option value="Governance">Governance</option>
                                 <option value="Risk Management">Risk Management</option>
@@ -87,7 +87,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modal-title">Novo Item de Conhecimento</h2>
-                <button class="modal-close" onclick="Knowledge.closeModal()">✕</button>
+                <button class="modal-close" id="kb-modal-close">✕</button>
             </div>
             <div class="modal-body">
                 <form id="knowledge-form">
@@ -129,8 +129,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="Knowledge.closeModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="Knowledge.save()">Salvar</button>
+                <button class="btn btn-secondary" id="kb-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="kb-modal-save">Salvar</button>
             </div>
         </div>
     </div>
@@ -140,15 +140,15 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="view-title">Item de Conhecimento</h2>
-                <button class="modal-close" onclick="Knowledge.closeViewModal()">✕</button>
+                <button class="modal-close" id="kb-view-modal-close">✕</button>
             </div>
             <div class="modal-body" id="view-content">
                 <!-- Content loaded dynamically -->
             </div>
             <div class="modal-footer">
-                <button class="btn btn-danger" id="delete-btn" onclick="Knowledge.deleteItem()">Deletar</button>
-                <button class="btn btn-secondary" onclick="Knowledge.closeViewModal()">Fechar</button>
-                <button class="btn btn-primary" onclick="Knowledge.editItem()">Editar</button>
+                <button class="btn btn-danger" id="delete-btn">Deletar</button>
+                <button class="btn btn-secondary" id="kb-view-modal-close-footer">Fechar</button>
+                <button class="btn btn-primary" id="kb-view-modal-edit">Editar</button>
             </div>
         </div>
     </div>

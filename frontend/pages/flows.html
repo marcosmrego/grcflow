@@ -27,7 +27,7 @@
                     <span id="api-status">Conectando...</span>
                 </a></li>
                 <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
-                <li><a href="#" class="nav-link" onclick="API.logout();return false;">Sair</a></li>
+                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
             </ul>
         </nav>
 
@@ -40,7 +40,7 @@
                     <p class="subtitle">Gerenciar processos e fluxos de trabalho</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-primary" onclick="ProcessFlow.openCreateModal()">
+                    <button class="btn btn-primary" id="btn-new-flow">
                         + Novo Fluxo
                     </button>
                 </div>
@@ -51,11 +51,11 @@
                 <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <input type="text" class="form-control" id="search-input" 
-                                   placeholder="🔍 Buscar fluxos..." onkeyup="ProcessFlow.search()">
+                            <input type="text" class="form-control" id="search-input"
+                                   placeholder="🔍 Buscar fluxos...">
                         </div>
                         <div class="form-group">
-                            <select class="form-control" id="status-filter" onchange="ProcessFlow.filterByStatus()">
+                            <select class="form-control" id="status-filter">
                                 <option value="">Todos os status</option>
                                 <option value="draft">📝 Rascunho</option>
                                 <option value="published">✅ Publicado</option>
@@ -78,7 +78,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="flow-modal-title">Novo Fluxo de Processo</h2>
-                <button class="modal-close" onclick="ProcessFlow.closeModal()">✕</button>
+                <button class="modal-close" id="flow-modal-close">✕</button>
             </div>
             <div class="modal-body">
                 <form id="flow-form">
@@ -104,8 +104,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="ProcessFlow.closeModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="ProcessFlow.saveFlow()">Salvar</button>
+                <button class="btn btn-secondary" id="flow-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="flow-modal-save">Salvar</button>
             </div>
         </div>
     </div>
@@ -115,15 +115,15 @@
         <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
             <div class="modal-header">
                 <h2 id="flow-view-title">Fluxo de Processo</h2>
-                <button class="modal-close" onclick="ProcessFlow.closeViewModal()">✕</button>
+                <button class="modal-close" id="flow-view-modal-close">✕</button>
             </div>
             <div class="modal-body" id="flow-view-content" style="max-height: 60vh; overflow-y: auto;">
                 <!-- Content loaded dynamically -->
             </div>
             <div class="modal-footer">
-                <button class="btn btn-danger" onclick="ProcessFlow.deleteFlow()">Deletar</button>
-                <button class="btn btn-secondary" onclick="ProcessFlow.closeViewModal()">Fechar</button>
-                <button class="btn btn-primary" onclick="ProcessFlow.editFlow()">Editar</button>
+                <button class="btn btn-danger" id="flow-view-modal-delete">Deletar</button>
+                <button class="btn btn-secondary" id="flow-view-modal-close-footer">Fechar</button>
+                <button class="btn btn-primary" id="flow-view-modal-edit">Editar</button>
             </div>
         </div>
     </div>
@@ -133,7 +133,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Adicionar Passo ao Fluxo</h2>
-                <button class="modal-close" onclick="ProcessFlow.closeStepModal()">✕</button>
+                <button class="modal-close" id="step-modal-close">✕</button>
             </div>
             <div class="modal-body">
                 <form id="step-form">
@@ -167,8 +167,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="ProcessFlow.closeStepModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="ProcessFlow.saveStep()">Adicionar</button>
+                <button class="btn btn-secondary" id="step-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="step-modal-save">Adicionar</button>
             </div>
         </div>
     </div>
