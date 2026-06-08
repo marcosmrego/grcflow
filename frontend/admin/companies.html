@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empresas — Painel da Plataforma · GRC Flow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">🛠️</span>
+                    <span class="logo-text">GRC Flow — Painel da Plataforma</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="companies.html" class="nav-link active">Empresas</a></li>
+                <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
+                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>🏢 Empresas</h1>
+                    <p class="subtitle">Gerenciar empresas (tenants) cadastradas na plataforma</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-new-company">
+                        + Nova Empresa
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filter Bar -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="search-input"
+                                   placeholder="🔍 Buscar empresas por nome ou documento...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Companies Container -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Empresas Cadastradas</h2>
+                    <span id="company-count" style="color: var(--text-secondary);">0 empresas</span>
+                </div>
+                <div class="card-body">
+                    <div id="companies-list" class="items-list">
+                        <div class="loading">Carregando empresas...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="company-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="company-modal-title">Nova Empresa</h2>
+                <button class="modal-close" id="company-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="company-form">
+                    <div class="form-group">
+                        <label for="company-name">Nome *</label>
+                        <input type="text" class="form-control" id="company-name" required
+                               placeholder="Nome da empresa">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company-document">CNPJ / Documento</label>
+                        <input type="text" class="form-control" id="company-document"
+                               placeholder="00.000.000/0000-00">
+                    </div>
+
+                    <div class="form-group" id="company-active-group" style="display: none;">
+                        <label for="company-active">Status</label>
+                        <select class="form-control" id="company-active">
+                            <option value="true">✅ Ativa</option>
+                            <option value="false">⛔ Inativa</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="company-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="company-modal-save">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/admin-api.js"></script>
+    <script src="../js/admin-companies.js"></script>
+</body>
+</html>
