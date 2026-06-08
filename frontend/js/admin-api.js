@@ -76,6 +76,13 @@ const AdminAPI = {
         });
     },
 
+    async createCompanyAdmin(companyId, data) {
+        return this.request(`/companies/${companyId}/admin-user`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
     // Helper Methods
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;

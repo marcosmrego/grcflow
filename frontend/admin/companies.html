@@ -103,6 +103,42 @@
         </div>
     </div>
 
+    <!-- Create Company Admin Modal -->
+    <div id="company-admin-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="company-admin-modal-title">Criar Administrador</h2>
+                <button class="modal-close" id="company-admin-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="item-description" id="company-admin-modal-company" style="margin-bottom: 1rem;"></p>
+                <form id="company-admin-form">
+                    <div class="form-group">
+                        <label for="company-admin-name">Nome *</label>
+                        <input type="text" class="form-control" id="company-admin-name" required
+                               placeholder="Nome completo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company-admin-email">E-mail *</label>
+                        <input type="email" class="form-control" id="company-admin-email" required
+                               placeholder="admin@empresa.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company-admin-password">Senha *</label>
+                        <input type="password" class="form-control" id="company-admin-password" required
+                               placeholder="Mínimo de 8 caracteres">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="company-admin-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="company-admin-modal-save">Criar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../js/admin-api.js"></script>
     <script src="../js/admin-companies.js"></script>
 </body>

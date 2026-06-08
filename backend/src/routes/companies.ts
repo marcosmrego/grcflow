@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { companyService } from '../services/CompanyService';
+import { userService } from '../services/UserService';
 import {
   systemAuthMiddleware,
   requireSystemAdmin,
@@ -122,6 +123,50 @@ router.post(
     const response: ApiResponse<any> = {
       success: true,
       data: company,
+    };
+
+    res.status(201).json(response);
+  })
+);
+
+/**
+ * POST /api/companies/:id/admin-user
+ * Create the initial admin user for a company (system admin only)
+ */
+router.post(
+  '/:id/admin-user',
+  [
+    param('id').isUUID().withMessage('Invalid company ID'),
+    body('email')
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Invalid email address'),
+    body('name')
+      .trim()
+      .isLength({ min: 2, max: 255 })
+      .withMessage('Name must be between 2 and 255 characters'),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters long'),
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.systemUser) {
+      throw new AuthenticationError('User not authenticated');
+    }
+
+    const company = await companyService.getCompany(req.params.id);
+
+    const user = await userService.createUser(company.id, {
+      email: req.body.email,
+      name: req.body.name,
+      role: 'admin',
+      password: req.body.password,
+    });
+
+    const response: ApiResponse<any> = {
+      success: true,
+      data: user,
     };
 
     res.status(201).json(response);

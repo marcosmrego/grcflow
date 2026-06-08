@@ -4,6 +4,7 @@
 
 const Companies = {
     editingId: null,
+    adminModalCompany: null,
 
     async init() {
         this.setupEventListeners();
@@ -34,6 +35,23 @@ const Companies = {
         const modalSave = document.getElementById('company-modal-save');
         if (modalSave) modalSave.addEventListener('click', () => this.save());
 
+        const adminForm = document.getElementById('company-admin-form');
+        if (adminForm) {
+            adminForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveCompanyAdmin();
+            });
+        }
+
+        const adminModalClose = document.getElementById('company-admin-modal-close');
+        if (adminModalClose) adminModalClose.addEventListener('click', () => this.closeAdminModal());
+
+        const adminModalCancel = document.getElementById('company-admin-modal-cancel');
+        if (adminModalCancel) adminModalCancel.addEventListener('click', () => this.closeAdminModal());
+
+        const adminModalSave = document.getElementById('company-admin-modal-save');
+        if (adminModalSave) adminModalSave.addEventListener('click', () => this.saveCompanyAdmin());
+
         const list = document.getElementById('companies-list');
         if (list) {
             list.addEventListener('click', (e) => {
@@ -43,6 +61,7 @@ const Companies = {
                 switch (btn.dataset.action) {
                     case 'create': this.openCreateModal(); break;
                     case 'edit': this.editCompany(id); break;
+                    case 'create-admin': this.openCreateAdminModal(id, btn.dataset.name); break;
                     case 'toggle-active': this.toggleActive(id, btn.dataset.active === 'true'); break;
                     case 'delete': this.confirmDelete(id); break;
                 }
@@ -103,6 +122,7 @@ const Companies = {
                     </div>
                 </div>
                 <div class="item-actions">
+                    <button class="item-action" title="Criar usuário admin" data-action="create-admin" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👤</button>
                     <button class="item-action" title="Editar" data-action="edit" data-id="${company.id}">✏️</button>
                     <button class="item-action" title="${company.is_active ? 'Desativar' : 'Ativar'}" data-action="toggle-active" data-id="${company.id}" data-active="${company.is_active}">${company.is_active ? '⛔' : '✅'}</button>
                     <button class="item-action" title="Deletar" data-action="delete" data-id="${company.id}">🗑️</button>
@@ -233,6 +253,43 @@ const Companies = {
             console.error('Error deleting company:', error);
             alert(error.message || 'Erro ao deletar empresa');
         }
+    },
+
+    openCreateAdminModal(id, name) {
+        this.adminModalCompany = id;
+        document.getElementById('company-admin-modal-company').textContent = `Empresa: ${name}`;
+        document.getElementById('company-admin-form').reset();
+        this.toggleModal('company-admin-modal', true);
+    },
+
+    async saveCompanyAdmin() {
+        try {
+            const name = document.getElementById('company-admin-name').value.trim();
+            const email = document.getElementById('company-admin-email').value.trim();
+            const password = document.getElementById('company-admin-password').value;
+
+            if (!name || !email || !password) {
+                alert('Preencha nome, e-mail e senha');
+                return;
+            }
+
+            if (password.length < 8) {
+                alert('A senha deve ter no mínimo 8 caracteres');
+                return;
+            }
+
+            await AdminAPI.createCompanyAdmin(this.adminModalCompany, { name, email, password });
+            alert('Usuário admin criado com sucesso!');
+            this.closeAdminModal();
+        } catch (error) {
+            console.error('Error creating company admin:', error);
+            alert(error.message || 'Erro ao criar usuário admin');
+        }
+    },
+
+    closeAdminModal() {
+        this.adminModalCompany = null;
+        this.toggleModal('company-admin-modal', false);
     },
 
     closeModal() {
