@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { AuthService } from './AuthService';
 import { userRepository } from '../repositories/UserRepository';
+import { companyRepository } from '../repositories/CompanyRepository';
 import { User, AuthTokens, UserPayload } from '../models/types';
-import { ValidationError, AuthenticationError, ConflictError } from '../middleware';
+import { ValidationError, AuthenticationError, ConflictError, NotFoundError } from '../middleware';
 
 interface LoginRequest {
   email: string;
@@ -14,6 +15,7 @@ interface RegisterRequest {
   name: string;
   password: string;
   passwordConfirm?: string;
+  companyId: string;
 }
 
 interface AuthResponse {
@@ -65,12 +67,7 @@ export class UserService {
     return {
       token: tokens.token,
       refreshToken: tokens.refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
+      user: AuthService.toUserPayload(user),
     };
   }
 
@@ -78,11 +75,11 @@ export class UserService {
    * Register new user
    */
   async register(registerData: RegisterRequest): Promise<AuthResponse> {
-    const { email, name, password, passwordConfirm } = registerData;
+    const { email, name, password, passwordConfirm, companyId } = registerData;
 
     // Validate input
-    if (!email || !name || !password) {
-      throw new ValidationError('Email, name and password are required');
+    if (!email || !name || !password || !companyId) {
+      throw new ValidationError('Email, name, password and companyId are required');
     }
 
     if (password.length < 8) {
@@ -91,6 +88,15 @@ export class UserService {
 
     if (passwordConfirm && password !== passwordConfirm) {
       throw new ValidationError('Passwords do not match');
+    }
+
+    // Validate company exists and is active
+    const company = await companyRepository.findById(companyId);
+    if (!company) {
+      throw new NotFoundError('Company not found');
+    }
+    if (!company.is_active) {
+      throw new ValidationError('Company is not active');
     }
 
     // Check if email already exists
@@ -105,6 +111,7 @@ export class UserService {
     // Create user
     const user = await userRepository.create({
       id: uuidv4(),
+      company_id: companyId,
       email: email.toLowerCase(),
       name: name.trim(),
       password_hash: passwordHash,
@@ -118,12 +125,7 @@ export class UserService {
     return {
       token: tokens.token,
       refreshToken: tokens.refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
+      user: AuthService.toUserPayload(user),
     };
   }
 
@@ -165,12 +167,7 @@ export class UserService {
       throw new AuthenticationError('User not found');
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
+    return AuthService.toUserPayload(user);
   }
 
   /**
@@ -185,12 +182,7 @@ export class UserService {
       throw new AuthenticationError('User not found');
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
+    return AuthService.toUserPayload(user);
   }
 
   /**
@@ -233,29 +225,24 @@ export class UserService {
   }
 
   /**
-   * Get all users (admin only)
+   * Get all users of a company (admin only)
    */
-  async listUsers(limit: number = 20, offset: number = 0): Promise<{
+  async listUsers(companyId: string, limit: number = 20, offset: number = 0): Promise<{
     users: UserPayload[];
     total: number;
   }> {
-    const { users, total } = await userRepository.listActive(limit, offset);
+    const { users, total } = await userRepository.listByCompany(companyId, limit, offset);
 
     return {
-      users: users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      })),
+      users: users.map((user) => AuthService.toUserPayload(user)),
       total,
     };
   }
 
   /**
-   * Create user (admin only)
+   * Create user in the admin's company (admin only)
    */
-  async createUser(data: {
+  async createUser(companyId: string, data: {
     email: string;
     name: string;
     role: 'admin' | 'editor' | 'viewer';
@@ -279,6 +266,7 @@ export class UserService {
     // Create user
     const user = await userRepository.create({
       id: uuidv4(),
+      company_id: companyId,
       email: data.email.toLowerCase(),
       name: data.name.trim(),
       password_hash: passwordHash,
@@ -286,22 +274,22 @@ export class UserService {
       is_active: true,
     });
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
+    return AuthService.toUserPayload(user);
   }
 
   /**
-   * Update user (admin only)
+   * Update user within the admin's company (admin only)
    */
-  async updateUser(userId: string, updates: {
+  async updateUser(userId: string, companyId: string, updates: {
     name?: string;
     role?: 'admin' | 'editor' | 'viewer';
     is_active?: boolean;
   }): Promise<UserPayload> {
+    const existing = await userRepository.findByIdInCompany(userId, companyId);
+    if (!existing) {
+      throw new AuthenticationError('User not found');
+    }
+
     const user = await userRepository.update(userId, {
       name: updates.name?.trim(),
       role: updates.role,
@@ -312,19 +300,14 @@ export class UserService {
       throw new AuthenticationError('User not found');
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
+    return AuthService.toUserPayload(user);
   }
 
   /**
-   * Delete user (admin only - soft delete)
+   * Delete user within the admin's company (admin only - soft delete)
    */
-  async deleteUser(userId: string, deletedBy: string): Promise<void> {
-    const user = await userRepository.findById(userId);
+  async deleteUser(userId: string, companyId: string, deletedBy: string): Promise<void> {
+    const user = await userRepository.findByIdInCompany(userId, companyId);
 
     if (!user) {
       throw new AuthenticationError('User not found');

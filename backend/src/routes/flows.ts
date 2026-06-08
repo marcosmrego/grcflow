@@ -1,8 +1,11 @@
 import express, { Request, Response } from 'express';
 import { processFlowService } from '../services/ProcessFlowService';
 import { validationResult, body, query, param } from 'express-validator';
+import { authMiddleware, requireAuth, AuthenticationError, NotFoundError } from '../middleware';
 
 const router = express.Router();
+
+router.use(authMiddleware, requireAuth);
 
 const handleValidationErrors = (req: Request, res: Response, next: Function) => {
   const errors = validationResult(req);
@@ -19,8 +22,9 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { status } = req.query;
-      const flows = await processFlowService.listFlows(status as string);
+      const flows = await processFlowService.listFlows(req.user.companyId, status as string);
       res.json(flows);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch process flows' });
@@ -35,8 +39,9 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const flow = await processFlowService.getFlow(id);
+      const flow = await processFlowService.getFlow(id, req.user.companyId);
       if (!flow) {
         return res.status(404).json({ error: 'Process flow not found' });
       }
@@ -59,8 +64,10 @@ router.post(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { name, description, metadata, status } = req.body;
       const flow = await processFlowService.createFlow({
+        companyId: req.user.companyId,
         name,
         description: description || '',
         steps: [],
@@ -86,10 +93,11 @@ router.post(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { flowId } = req.params;
       const { order, title, description, type, inputs, outputs, nextSteps } = req.body;
 
-      const step = await processFlowService.addStepToFlow({
+      const step = await processFlowService.addStepToFlow(req.user.companyId, {
         flowId,
         order,
         title,
@@ -101,6 +109,9 @@ router.post(
       });
       res.status(201).json(step);
     } catch (error) {
+      if (error instanceof NotFoundError) {
+        return res.status(404).json({ error: 'Process flow not found' });
+      }
       res.status(500).json({ error: 'Failed to add step to flow' });
     }
   }
@@ -119,8 +130,9 @@ router.put(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const updatedFlow = await processFlowService.updateFlow(id, req.body);
+      const updatedFlow = await processFlowService.updateFlow(id, req.user.companyId, req.body);
       if (!updatedFlow) {
         return res.status(404).json({ error: 'Process flow not found' });
       }
@@ -138,8 +150,9 @@ router.delete(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const deleted = await processFlowService.deleteFlow(id);
+      const deleted = await processFlowService.deleteFlow(id, req.user.companyId);
       if (!deleted) {
         return res.status(404).json({ error: 'Process flow not found' });
       }

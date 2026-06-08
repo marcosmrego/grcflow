@@ -3,6 +3,15 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function seedDatabase() {
   try {
+    // Empresa demo — todos os dados de exemplo pertencem a ela
+    const companyResult = await db.query(
+      `SELECT id FROM companies WHERE name = 'Empresa Demo' LIMIT 1`
+    );
+    if (companyResult.rows.length === 0) {
+      throw new Error("Empresa 'Empresa Demo' não encontrada. Rode as migrations antes de seedar.");
+    }
+    const companyId = companyResult.rows[0].id;
+
     // Seed categories
     const categories = [
       { id: uuidv4(), name: 'Governance', description: 'Governance-related knowledge items' },
@@ -14,8 +23,8 @@ export async function seedDatabase() {
 
     for (const category of categories) {
       await db.query(
-        `INSERT INTO categories (id, name, description) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-        [category.id, category.name, category.description]
+        `INSERT INTO categories (id, company_id, name, description) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+        [category.id, companyId, category.name, category.description]
       );
     }
 
@@ -30,8 +39,8 @@ export async function seedDatabase() {
 
     for (const tag of tags) {
       await db.query(
-        `INSERT INTO tags (id, name, color) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-        [tag.id, tag.name, tag.color]
+        `INSERT INTO tags (id, company_id, name, color) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+        [tag.id, companyId, tag.name, tag.color]
       );
     }
 
@@ -65,9 +74,9 @@ export async function seedDatabase() {
 
     for (const item of knowledgeItems) {
       await db.query(
-        `INSERT INTO knowledge_items (id, category, title, description, content, tags) 
-         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
-        [item.id, item.category, item.title, item.description, item.content, item.tags]
+        `INSERT INTO knowledge_items (id, company_id, category, title, description, content, tags)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
+        [item.id, companyId, item.category, item.title, item.description, item.content, item.tags]
       );
     }
 

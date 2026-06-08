@@ -7,12 +7,13 @@ export class ProcessFlowRepository {
     const id = uuidv4();
     const now = new Date();
     const query = `
-      INSERT INTO process_flows (id, name, description, metadata, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO process_flows (id, company_id, name, description, metadata, status, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;
     `;
     const result = await db.query(query, [
       id,
+      flow.companyId,
       flow.name,
       flow.description,
       JSON.stringify(flow.metadata || {}),
@@ -24,9 +25,9 @@ export class ProcessFlowRepository {
     return this.mapFlow(flowRow, flow.steps);
   }
 
-  async findById(id: string): Promise<ProcessFlow | null> {
-    const query = 'SELECT * FROM process_flows WHERE id = $1;';
-    const result = await db.query(query, [id]);
+  async findById(id: string, companyId: string): Promise<ProcessFlow | null> {
+    const query = 'SELECT * FROM process_flows WHERE id = $1 AND company_id = $2;';
+    const result = await db.query(query, [id, companyId]);
     if (result.rows.length === 0) return null;
 
     const stepsQuery = 'SELECT * FROM process_steps WHERE flow_id = $1 ORDER BY "order" ASC;';
@@ -35,12 +36,12 @@ export class ProcessFlowRepository {
     return this.mapFlow(result.rows[0], stepsResult.rows.map(s => this.mapStep(s)));
   }
 
-  async list(status?: string): Promise<ProcessFlow[]> {
-    let query = 'SELECT * FROM process_flows';
-    const params: any[] = [];
+  async list(companyId: string, status?: string): Promise<ProcessFlow[]> {
+    let query = 'SELECT * FROM process_flows WHERE company_id = $1';
+    const params: any[] = [companyId];
 
     if (status) {
-      query += ' WHERE status = $1';
+      query += ' AND status = $2';
       params.push(status);
     }
 
@@ -55,6 +56,17 @@ export class ProcessFlowRepository {
     });
 
     return Promise.all(flowPromises);
+  }
+
+  /**
+   * Confere se o fluxo pertence à empresa antes de manipular seus passos
+   */
+  async belongsToCompany(flowId: string, companyId: string): Promise<boolean> {
+    const result = await db.query(
+      'SELECT 1 FROM process_flows WHERE id = $1 AND company_id = $2;',
+      [flowId, companyId]
+    );
+    return result.rows.length > 0;
   }
 
   async addStep(step: Omit<ProcessStep, 'id'>): Promise<ProcessStep> {
@@ -78,20 +90,21 @@ export class ProcessFlowRepository {
     return this.mapStep(result.rows[0]);
   }
 
-  async updateFlow(id: string, updates: Partial<ProcessFlow>): Promise<ProcessFlow | null> {
+  async updateFlow(id: string, companyId: string, updates: Partial<ProcessFlow>): Promise<ProcessFlow | null> {
     const now = new Date();
     const query = `
-      UPDATE process_flows 
-      SET name = COALESCE($2, name),
-          description = COALESCE($3, description),
-          metadata = COALESCE($4, metadata),
-          status = COALESCE($5, status),
-          updated_at = $6
-      WHERE id = $1
+      UPDATE process_flows
+      SET name = COALESCE($3, name),
+          description = COALESCE($4, description),
+          metadata = COALESCE($5, metadata),
+          status = COALESCE($6, status),
+          updated_at = $7
+      WHERE id = $1 AND company_id = $2
       RETURNING *;
     `;
     const result = await db.query(query, [
       id,
+      companyId,
       updates.name,
       updates.description,
       updates.metadata ? JSON.stringify(updates.metadata) : null,
@@ -107,15 +120,16 @@ export class ProcessFlowRepository {
     return this.mapFlow(result.rows[0], stepsResult.rows.map(s => this.mapStep(s)));
   }
 
-  async delete(id: string): Promise<boolean> {
-    const query = 'DELETE FROM process_flows WHERE id = $1;';
-    const result = await db.query(query, [id]);
+  async delete(id: string, companyId: string): Promise<boolean> {
+    const query = 'DELETE FROM process_flows WHERE id = $1 AND company_id = $2;';
+    const result = await db.query(query, [id, companyId]);
     return (result.rowCount ?? 0) > 0;
   }
 
   private mapFlow(row: any, steps: ProcessStep[]): ProcessFlow {
     return {
       id: row.id,
+      companyId: row.company_id,
       name: row.name,
       description: row.description,
       steps,

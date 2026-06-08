@@ -8,6 +8,9 @@ import knowledgeRoutes from './routes/knowledge';
 import flowsRoutes from './routes/flows';
 import authRoutes from './routes/auth';
 import usersRoutes from './routes/users';
+import companiesRoutes from './routes/companies';
+import systemAuthRoutes from './routes/systemAuth';
+import systemUsersRoutes from './routes/systemUsers';
 import {
   auditContextMiddleware,
   generalLimiter,
@@ -39,6 +42,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/flows', flowsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/companies', companiesRoutes);
+app.use('/api/system/auth', systemAuthRoutes);
+app.use('/api/system/users', systemUsersRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

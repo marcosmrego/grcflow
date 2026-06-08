@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Permission, RolePermissions, UserRole } from '../models/types';
+import { Permission, RolePermissions, UserRole, SystemUserRole } from '../models/types';
 
 /**
  * Define role-based permissions
@@ -126,6 +126,62 @@ export const requireEditor = (req: Request, res: Response, next: NextFunction) =
       error: {
         code: 'FORBIDDEN',
         message: 'Editor or Admin access required',
+      },
+    });
+  }
+
+  next();
+};
+
+/**
+ * Middleware to require a specific system user role
+ */
+export const requireSystemRole = (role: SystemUserRole) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.systemUser) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'System authentication required',
+        },
+      });
+    }
+
+    if (req.systemUser.role !== role) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: `Access denied. Required system role: ${role}`,
+        },
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Middleware to require system super_admin role
+ */
+export const requireSystemAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.systemUser) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: 'System authentication required',
+      },
+    });
+  }
+
+  if (req.systemUser.role !== 'super_admin') {
+    return res.status(403).json({
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Super admin access required',
       },
     });
   }

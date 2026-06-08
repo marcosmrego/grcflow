@@ -7,12 +7,13 @@ export class KnowledgeRepository {
     const id = uuidv4();
     const now = new Date();
     const query = `
-      INSERT INTO knowledge_items (id, category, title, description, content, tags, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO knowledge_items (id, company_id, category, title, description, content, tags, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *;
     `;
     const result = await db.query(query, [
       id,
+      item.companyId,
       item.category,
       item.title,
       item.description,
@@ -24,59 +25,61 @@ export class KnowledgeRepository {
     return this.mapRow(result.rows[0]);
   }
 
-  async findById(id: string): Promise<KnowledgeItem | null> {
-    const query = 'SELECT * FROM knowledge_items WHERE id = $1;';
-    const result = await db.query(query, [id]);
+  async findById(id: string, companyId: string): Promise<KnowledgeItem | null> {
+    const query = 'SELECT * FROM knowledge_items WHERE id = $1 AND company_id = $2;';
+    const result = await db.query(query, [id, companyId]);
     return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
   }
 
-  async findByCategory(category: string, limit = 20, offset = 0): Promise<KnowledgeItem[]> {
+  async findByCategory(companyId: string, category: string, limit = 20, offset = 0): Promise<KnowledgeItem[]> {
     const query = `
-      SELECT * FROM knowledge_items 
-      WHERE category = $1 
-      ORDER BY created_at DESC 
-      LIMIT $2 OFFSET $3;
+      SELECT * FROM knowledge_items
+      WHERE company_id = $1 AND category = $2
+      ORDER BY created_at DESC
+      LIMIT $3 OFFSET $4;
     `;
-    const result = await db.query(query, [category, limit, offset]);
+    const result = await db.query(query, [companyId, category, limit, offset]);
     return result.rows.map(row => this.mapRow(row));
   }
 
-  async findByTag(tag: string): Promise<KnowledgeItem[]> {
+  async findByTag(companyId: string, tag: string): Promise<KnowledgeItem[]> {
     const query = `
-      SELECT * FROM knowledge_items 
-      WHERE tags @> $1
+      SELECT * FROM knowledge_items
+      WHERE company_id = $1 AND tags @> $2
       ORDER BY created_at DESC;
     `;
-    const result = await db.query(query, [JSON.stringify([tag])]);
+    const result = await db.query(query, [companyId, JSON.stringify([tag])]);
     return result.rows.map(row => this.mapRow(row));
   }
 
-  async search(query: string): Promise<KnowledgeItem[]> {
+  async search(companyId: string, query: string): Promise<KnowledgeItem[]> {
     const searchQuery = `
-      SELECT * FROM knowledge_items 
-      WHERE to_tsvector('portuguese', title || ' ' || description || ' ' || content) 
-            @@ plainto_tsquery('portuguese', $1)
+      SELECT * FROM knowledge_items
+      WHERE company_id = $1
+            AND to_tsvector('portuguese', title || ' ' || description || ' ' || content)
+                @@ plainto_tsquery('portuguese', $2)
       ORDER BY created_at DESC;
     `;
-    const result = await db.query(searchQuery, [query]);
+    const result = await db.query(searchQuery, [companyId, query]);
     return result.rows.map(row => this.mapRow(row));
   }
 
-  async update(id: string, updates: Partial<KnowledgeItem>): Promise<KnowledgeItem | null> {
+  async update(id: string, companyId: string, updates: Partial<KnowledgeItem>): Promise<KnowledgeItem | null> {
     const now = new Date();
     const query = `
-      UPDATE knowledge_items 
-      SET title = COALESCE($2, title),
-          description = COALESCE($3, description),
-          content = COALESCE($4, content),
-          tags = COALESCE($5, tags),
-          category = COALESCE($6, category),
-          updated_at = $7
-      WHERE id = $1
+      UPDATE knowledge_items
+      SET title = COALESCE($3, title),
+          description = COALESCE($4, description),
+          content = COALESCE($5, content),
+          tags = COALESCE($6, tags),
+          category = COALESCE($7, category),
+          updated_at = $8
+      WHERE id = $1 AND company_id = $2
       RETURNING *;
     `;
     const result = await db.query(query, [
       id,
+      companyId,
       updates.title,
       updates.description,
       updates.content,
@@ -87,25 +90,27 @@ export class KnowledgeRepository {
     return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
   }
 
-  async delete(id: string): Promise<boolean> {
-    const query = 'DELETE FROM knowledge_items WHERE id = $1;';
-    const result = await db.query(query, [id]);
+  async delete(id: string, companyId: string): Promise<boolean> {
+    const query = 'DELETE FROM knowledge_items WHERE id = $1 AND company_id = $2;';
+    const result = await db.query(query, [id, companyId]);
     return (result.rowCount ?? 0) > 0;
   }
 
-  async list(limit = 50, offset = 0): Promise<KnowledgeItem[]> {
+  async list(companyId: string, limit = 50, offset = 0): Promise<KnowledgeItem[]> {
     const query = `
-      SELECT * FROM knowledge_items 
-      ORDER BY created_at DESC 
-      LIMIT $1 OFFSET $2;
+      SELECT * FROM knowledge_items
+      WHERE company_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3;
     `;
-    const result = await db.query(query, [limit, offset]);
+    const result = await db.query(query, [companyId, limit, offset]);
     return result.rows.map(row => this.mapRow(row));
   }
 
   private mapRow(row: any): KnowledgeItem {
     return {
       id: row.id,
+      companyId: row.company_id,
       category: row.category,
       title: row.title,
       description: row.description,

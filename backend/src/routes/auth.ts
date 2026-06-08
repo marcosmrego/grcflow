@@ -99,6 +99,9 @@ router.post(
     body('passwordConfirm')
       .custom((value, { req }) => value === req.body.password)
       .withMessage('Passwords do not match'),
+    body('companyId')
+      .isUUID()
+      .withMessage('A valid companyId is required'),
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
@@ -107,6 +110,7 @@ router.post(
       name: req.body.name,
       password: req.body.password,
       passwordConfirm: req.body.passwordConfirm,
+      companyId: req.body.companyId,
     });
 
     const response: ApiResponse<any> = {

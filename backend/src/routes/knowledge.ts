@@ -1,8 +1,11 @@
 import express, { Request, Response } from 'express';
 import { knowledgeService } from '../services/KnowledgeService';
 import { validationResult, body, query, param } from 'express-validator';
+import { authMiddleware, requireAuth, AuthenticationError } from '../middleware';
 
 const router = express.Router();
+
+router.use(authMiddleware, requireAuth);
 
 // Middleware para tratamento de erros de validação
 const handleValidationErrors = (req: Request, res: Response, next: Function) => {
@@ -23,9 +26,10 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const limit = (req.query.limit as any) || 50;
       const offset = (req.query.offset as any) || 0;
-      const items = await knowledgeService.listItems(limit, offset);
+      const items = await knowledgeService.listItems(req.user.companyId, limit, offset);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch knowledge items' });
@@ -44,10 +48,11 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { category } = req.params;
       const limit = (req.query.limit as any) || 20;
       const offset = (req.query.offset as any) || 0;
-      const items = await knowledgeService.getByCategory(category, limit, offset);
+      const items = await knowledgeService.getByCategory(req.user.companyId, category, limit, offset);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch items by category' });
@@ -62,8 +67,9 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { tag } = req.params;
-      const items = await knowledgeService.getByTag(tag);
+      const items = await knowledgeService.getByTag(req.user.companyId, tag);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch items by tag' });
@@ -78,8 +84,9 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { q } = req.query;
-      const items = await knowledgeService.searchItems(q as string);
+      const items = await knowledgeService.searchItems(req.user.companyId, q as string);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to search knowledge items' });
@@ -94,8 +101,9 @@ router.get(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const item = await knowledgeService.getItem(id);
+      const item = await knowledgeService.getItem(id, req.user.companyId);
       if (!item) {
         return res.status(404).json({ error: 'Knowledge item not found' });
       }
@@ -119,8 +127,10 @@ router.post(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { category, title, description, content, tags } = req.body;
       const item = await knowledgeService.createItem({
+        companyId: req.user.companyId,
         category,
         title,
         description,
@@ -148,8 +158,9 @@ router.put(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const updatedItem = await knowledgeService.updateItem(id, req.body);
+      const updatedItem = await knowledgeService.updateItem(id, req.user.companyId, req.body);
       if (!updatedItem) {
         return res.status(404).json({ error: 'Knowledge item not found' });
       }
@@ -167,8 +178,9 @@ router.delete(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const deleted = await knowledgeService.deleteItem(id);
+      const deleted = await knowledgeService.deleteItem(id, req.user.companyId);
       if (!deleted) {
         return res.status(404).json({ error: 'Knowledge item not found' });
       }

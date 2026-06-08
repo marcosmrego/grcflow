@@ -1,5 +1,11 @@
 // Auth middlewares
-export { authMiddleware, optionalAuthMiddleware, requireAuth } from './auth';
+export {
+  authMiddleware,
+  optionalAuthMiddleware,
+  requireAuth,
+  systemAuthMiddleware,
+  requireSystemAuth,
+} from './auth';
 
 // RBAC middlewares
 export {
@@ -9,6 +15,8 @@ export {
   requireEditor,
   requireAnyPermission,
   requireAllPermissions,
+  requireSystemRole,
+  requireSystemAdmin,
   rolePermissions,
 } from './rbac';
 

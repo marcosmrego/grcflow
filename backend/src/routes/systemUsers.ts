@@ -1,19 +1,17 @@
 import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { userService } from '../services/UserService';
+import { systemUserService } from '../services/SystemUserService';
 import {
-  authMiddleware,
-  requireAdmin,
+  systemAuthMiddleware,
+  requireSystemAdmin,
   asyncHandler,
-  AuthenticationError,
 } from '../middleware';
 import { ApiResponse } from '../models/types';
 
 const router = express.Router();
 
-/**
- * Middleware to handle validation errors
- */
+router.use(systemAuthMiddleware, requireSystemAdmin);
+
 const handleValidationErrors = (req: Request, res: Response, next: Function) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -37,36 +35,22 @@ const handleValidationErrors = (req: Request, res: Response, next: Function) => 
 };
 
 /**
- * GET /api/users
- * List all users (admin only)
+ * GET /api/system/users
+ * List system users (super_admin only)
  */
 router.get(
   '/',
-  authMiddleware,
-  requireAdmin,
   [
-    query('page')
-      .optional()
-      .isInt({ min: 1 })
-      .toInt()
-      .withMessage('Page must be a positive integer'),
-    query('limit')
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .toInt()
-      .withMessage('Limit must be between 1 and 100'),
+    query('page').optional().isInt({ min: 1 }).toInt(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw new AuthenticationError('User not authenticated');
-    }
-
     const page = (req.query.page as any) || 1;
     const limit = (req.query.limit as any) || 20;
     const offset = (page - 1) * limit;
 
-    const { users, total } = await userService.listUsers(req.user.companyId, limit, offset);
+    const { users, total } = await systemUserService.listUsers(limit, offset);
 
     const response: ApiResponse<any> = {
       success: true,
@@ -88,13 +72,11 @@ router.get(
 );
 
 /**
- * POST /api/users
- * Create new user (admin only)
+ * POST /api/system/users
+ * Create a new system user (super_admin only)
  */
 router.post(
   '/',
-  authMiddleware,
-  requireAdmin,
   [
     body('email')
       .isEmail()
@@ -105,20 +87,15 @@ router.post(
       .isLength({ min: 2, max: 255 })
       .withMessage('Name must be between 2 and 255 characters'),
     body('role')
-      .isIn(['admin', 'editor', 'viewer'])
-      .withMessage('Role must be admin, editor, or viewer'),
+      .isIn(['super_admin', 'support'])
+      .withMessage('Role must be super_admin or support'),
     body('password')
-      .optional()
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters long'),
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw new AuthenticationError('User not authenticated');
-    }
-
-    const user = await userService.createUser(req.user.companyId, {
+    const user = await systemUserService.createUser({
       email: req.body.email,
       name: req.body.name,
       role: req.body.role,
@@ -135,17 +112,13 @@ router.post(
 );
 
 /**
- * PUT /api/users/:id
- * Update user (admin only)
+ * PUT /api/system/users/:id
+ * Update a system user (super_admin only)
  */
 router.put(
   '/:id',
-  authMiddleware,
-  requireAdmin,
   [
-    param('id')
-      .isUUID()
-      .withMessage('Invalid user ID'),
+    param('id').isUUID().withMessage('Invalid user ID'),
     body('name')
       .optional()
       .trim()
@@ -153,8 +126,8 @@ router.put(
       .withMessage('Name must be between 2 and 255 characters'),
     body('role')
       .optional()
-      .isIn(['admin', 'editor', 'viewer'])
-      .withMessage('Role must be admin, editor, or viewer'),
+      .isIn(['super_admin', 'support'])
+      .withMessage('Role must be super_admin or support'),
     body('is_active')
       .optional()
       .isBoolean()
@@ -162,11 +135,7 @@ router.put(
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw new AuthenticationError('User not authenticated');
-    }
-
-    const user = await userService.updateUser(req.params.id, req.user.companyId, {
+    const user = await systemUserService.updateUser(req.params.id, {
       name: req.body.name,
       role: req.body.role,
       is_active: req.body.is_active,
@@ -182,31 +151,15 @@ router.put(
 );
 
 /**
- * DELETE /api/users/:id
- * Delete user (admin only - soft delete)
+ * DELETE /api/system/users/:id
+ * Delete a system user (super_admin only - soft delete)
  */
 router.delete(
   '/:id',
-  authMiddleware,
-  requireAdmin,
-  [
-    param('id')
-      .isUUID()
-      .withMessage('Invalid user ID'),
-  ],
+  [param('id').isUUID().withMessage('Invalid user ID')],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'User not authenticated',
-        },
-      });
-    }
-
-    await userService.deleteUser(req.params.id, req.user.companyId, req.user.id);
+    await systemUserService.deleteUser(req.params.id);
 
     const response: ApiResponse<{ message: string }> = {
       success: true,

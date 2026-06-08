@@ -29,6 +29,18 @@ export class UserRepository {
   }
 
   /**
+   * Find user by ID scoped to a company (used by company admins managing their own users,
+   * so an admin from one company can't reach a user from another by guessing IDs)
+   */
+  async findByIdInCompany(id: string, companyId: string): Promise<User | null> {
+    const result = await db.query(
+      `SELECT * FROM users WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+      [id, companyId]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
    * Find user by ID including deleted
    */
   async findByIdWithDeleted(id: string): Promise<User | null> {
@@ -45,10 +57,10 @@ export class UserRepository {
   async create(user: Omit<User, 'created_at' | 'updated_at' | 'deleted_at'>): Promise<User> {
     const result = await db.query(
       `INSERT INTO users (
-        id, email, name, password_hash, role, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        id, company_id, email, name, password_hash, role, is_active
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
-      [user.id, user.email, user.name, user.password_hash, user.role, user.is_active || true]
+      [user.id, user.company_id, user.email, user.name, user.password_hash, user.role, user.is_active ?? true]
     );
     return result.rows[0];
   }
@@ -115,23 +127,24 @@ export class UserRepository {
   }
 
   /**
-   * List all active users (admin only)
+   * List active users of a company (admin only)
    */
-  async listActive(limit: number = 20, offset: number = 0): Promise<{
+  async listByCompany(companyId: string, limit: number = 20, offset: number = 0): Promise<{
     users: User[];
     total: number;
   }> {
     const countResult = await db.query(
-      `SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL`
+      `SELECT COUNT(*) as count FROM users WHERE company_id = $1 AND deleted_at IS NULL`,
+      [companyId]
     );
     const total = parseInt(countResult.rows[0].count);
 
     const result = await db.query(
-      `SELECT * FROM users 
-       WHERE deleted_at IS NULL 
-       ORDER BY created_at DESC 
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
+      `SELECT * FROM users
+       WHERE company_id = $1 AND deleted_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [companyId, limit, offset]
     );
 
     return {
