@@ -28,6 +28,14 @@ export class ProcessFlowService {
     return processFlowRepository.updateFlow(id, companyId, updates);
   }
 
+  async deleteStep(flowId: string, stepId: string, companyId: string): Promise<boolean> {
+    const belongs = await processFlowRepository.belongsToCompany(flowId, companyId);
+    if (!belongs) {
+      throw new NotFoundError('Process flow not found');
+    }
+    return processFlowRepository.deleteStep(stepId, flowId);
+  }
+
   async deleteFlow(id: string, companyId: string): Promise<boolean> {
     return processFlowRepository.delete(id, companyId);
   }

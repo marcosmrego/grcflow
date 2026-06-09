@@ -164,6 +164,10 @@ const API = {
         });
     },
 
+    async deleteFlowStep(flowId, stepId) {
+        return this.request(`/flows/${flowId}/steps/${stepId}`, { method: 'DELETE' });
+    },
+
     // Company Users (admin only — scoped to the authenticated user's company)
     async getUsers(page = 1, limit = 50) {
         const result = await this.request(`/users?page=${page}&limit=${limit}`);

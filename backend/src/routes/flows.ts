@@ -117,6 +117,29 @@ router.post(
   }
 );
 
+// DELETE - Remover passo do fluxo
+router.delete(
+  '/:flowId/steps/:stepId',
+  [param('flowId').isUUID(), param('stepId').isUUID()],
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { flowId, stepId } = req.params;
+      const deleted = await processFlowService.deleteStep(flowId, stepId, req.user.companyId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Step not found' });
+      }
+      res.json({ message: 'Step deleted successfully' });
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return res.status(404).json({ error: 'Process flow not found' });
+      }
+      res.status(500).json({ error: 'Failed to delete step' });
+    }
+  }
+);
+
 // PUT - Atualizar fluxo de processo
 router.put(
   '/:id',

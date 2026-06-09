@@ -120,6 +120,14 @@ export class ProcessFlowRepository {
     return this.mapFlow(result.rows[0], stepsResult.rows.map(s => this.mapStep(s)));
   }
 
+  async deleteStep(stepId: string, flowId: string): Promise<boolean> {
+    const result = await db.query(
+      'DELETE FROM process_steps WHERE id = $1 AND flow_id = $2;',
+      [stepId, flowId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async delete(id: string, companyId: string): Promise<boolean> {
     const query = 'DELETE FROM process_flows WHERE id = $1 AND company_id = $2;';
     const result = await db.query(query, [id, companyId]);

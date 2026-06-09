@@ -58,6 +58,17 @@ const ProcessFlow = {
         const viewModalEdit = document.getElementById('flow-view-modal-edit');
         if (viewModalEdit) viewModalEdit.addEventListener('click', () => this.editFlow());
 
+        const viewModalAddStep = document.getElementById('flow-view-modal-add-step');
+        if (viewModalAddStep) viewModalAddStep.addEventListener('click', () => this.openAddStepModal());
+
+        const viewModalContent = document.getElementById('flow-view-content');
+        if (viewModalContent) {
+            viewModalContent.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action="delete-step"]');
+                if (btn) this.deleteStep(btn.dataset.stepId);
+            });
+        }
+
         const stepModalClose = document.getElementById('step-modal-close');
         if (stepModalClose) stepModalClose.addEventListener('click', () => this.closeStepModal());
 
@@ -279,6 +290,7 @@ const ProcessFlow = {
                     ${step.description ? `<div class="step-description">${this.escapeHtml(step.description)}</div>` : ''}
                     <span class="step-type-badge">${icon} ${label}</span>
                 </div>
+                <button class="item-action" title="Remover passo" data-action="delete-step" data-step-id="${step.id}" style="margin-left: auto; flex-shrink: 0;">🗑️</button>
             </div>
         `;
     },
@@ -367,6 +379,27 @@ const ProcessFlow = {
             container.innerHTML = flows.map(flow => this.renderFlowCard(flow)).join('');
         } catch (error) {
             console.error('Filter error:', error);
+        }
+    },
+
+    openAddStepModal() {
+        if (!this.currentFlow) return;
+        const currentSteps = this.currentFlow.steps ? this.currentFlow.steps.length : 0;
+        document.getElementById('step-form').reset();
+        document.getElementById('step-order').value = currentSteps + 1;
+        this.toggleModal('step-modal', true);
+    },
+
+    async deleteStep(stepId) {
+        if (!this.currentFlow) return;
+        if (!confirm('Remover este passo do fluxo?')) return;
+
+        try {
+            await API.deleteFlowStep(this.currentFlow.id, stepId);
+            await this.viewFlow(this.currentFlow.id);
+        } catch (error) {
+            console.error('Error deleting step:', error);
+            alert('Erro ao remover passo');
         }
     },
 
