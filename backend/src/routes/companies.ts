@@ -130,6 +130,44 @@ router.post(
 );
 
 /**
+ * GET /api/companies/:id/users
+ * List all users of a company (system admin only)
+ */
+router.get(
+  '/:id/users',
+  [
+    param('id').isUUID().withMessage('Invalid company ID'),
+    query('page').optional().isInt({ min: 1 }).toInt(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const page = (req.query.page as any) || 1;
+    const limit = (req.query.limit as any) || 50;
+    const offset = (page - 1) * limit;
+
+    await companyService.getCompany(req.params.id);
+
+    const { users, total } = await userService.listUsers(req.params.id, limit, offset);
+
+    const response: ApiResponse<any> = {
+      success: true,
+      data: {
+        items: users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+    };
+
+    res.json(response);
+  })
+);
+
+/**
  * POST /api/companies/:id/admin-user
  * Create the initial admin user for a company (system admin only)
  */

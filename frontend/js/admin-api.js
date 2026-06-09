@@ -76,6 +76,10 @@ const AdminAPI = {
         });
     },
 
+    async getCompanyUsers(companyId, page = 1, limit = 50) {
+        return this.request(`/companies/${companyId}/users?page=${page}&limit=${limit}`);
+    },
+
     async createCompanyAdmin(companyId, data) {
         return this.request(`/companies/${companyId}/admin-user`, {
             method: 'POST',

@@ -5,6 +5,7 @@
 const Companies = {
     editingId: null,
     adminModalCompany: null,
+    usersModalCompany: null,
 
     async init() {
         this.setupEventListeners();
@@ -43,6 +44,9 @@ const Companies = {
             });
         }
 
+        const usersModalClose = document.getElementById('company-users-modal-close');
+        if (usersModalClose) usersModalClose.addEventListener('click', () => this.closeUsersModal());
+
         const adminModalClose = document.getElementById('company-admin-modal-close');
         if (adminModalClose) adminModalClose.addEventListener('click', () => this.closeAdminModal());
 
@@ -61,6 +65,7 @@ const Companies = {
                 switch (btn.dataset.action) {
                     case 'create': this.openCreateModal(); break;
                     case 'edit': this.editCompany(id); break;
+                    case 'view-users': this.openUsersModal(id, btn.dataset.name); break;
                     case 'create-admin': this.openCreateAdminModal(id, btn.dataset.name); break;
                     case 'toggle-active': this.toggleActive(id, btn.dataset.active === 'true'); break;
                     case 'delete': this.confirmDelete(id); break;
@@ -122,6 +127,7 @@ const Companies = {
                     </div>
                 </div>
                 <div class="item-actions">
+                    <button class="item-action" title="Ver usuários" data-action="view-users" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👥</button>
                     <button class="item-action" title="Criar usuário admin" data-action="create-admin" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👤</button>
                     <button class="item-action" title="Editar" data-action="edit" data-id="${company.id}">✏️</button>
                     <button class="item-action" title="${company.is_active ? 'Desativar' : 'Ativar'}" data-action="toggle-active" data-id="${company.id}" data-active="${company.is_active}">${company.is_active ? '⛔' : '✅'}</button>
@@ -303,6 +309,58 @@ const Companies = {
         } else {
             modal.classList.remove('active');
         }
+    },
+
+    async openUsersModal(companyId, companyName) {
+        this.usersModalCompany = companyId;
+        document.getElementById('users-modal-title').textContent = `Usuários — ${companyName}`;
+        document.getElementById('users-modal-list').innerHTML = '<div class="loading">Carregando...</div>';
+        this.toggleModal('company-users-modal', true);
+
+        try {
+            const result = await AdminAPI.getCompanyUsers(companyId);
+            const users = result.items || [];
+            const listEl = document.getElementById('users-modal-list');
+            const countEl = document.getElementById('users-modal-count');
+
+            if (countEl) {
+                countEl.textContent = `${result.pagination.total} usuário${result.pagination.total !== 1 ? 's' : ''}`;
+            }
+
+            if (users.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👤</div>
+                        <div class="empty-state-title">Nenhum usuário cadastrado</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const roleLabel = { admin: '🔑 Admin', editor: '✏️ Editor', viewer: '👁️ Viewer' };
+
+            listEl.innerHTML = users.map(u => `
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-title">${this.escapeHtml(u.name)}</div>
+                        <div class="item-description">${this.escapeHtml(u.email)}</div>
+                        <div class="item-meta">
+                            <span>${roleLabel[u.role] || u.role}</span>
+                            <span>${u.is_active ? '<span class="badge badge-primary">Ativo</span>' : '<span class="badge" style="background:var(--danger)">Inativo</span>'}</span>
+                            <span>📅 ${AdminAPI.formatDate(u.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            document.getElementById('users-modal-list').innerHTML =
+                '<div class="alert alert-danger">Erro ao carregar usuários</div>';
+        }
+    },
+
+    closeUsersModal() {
+        this.usersModalCompany = null;
+        this.toggleModal('company-users-modal', false);
     },
 
     escapeHtml(text) {
