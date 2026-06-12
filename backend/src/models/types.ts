@@ -1,13 +1,73 @@
+export type DocType = 'ARTICLE' | 'POL' | 'POP' | 'IOP' | 'FOR' | 'FLU';
+
+export type KnowledgeItemStatus =
+  | 'draft'
+  | 'in_review'
+  | 'pending_approval'
+  | 'published'
+  | 'expired'
+  | 'archived';
+
+export type Confidentiality = 'publico' | 'interno' | 'restrito' | 'confidencial';
+
 export interface KnowledgeItem {
   id: string;
   companyId: string;
   category: string;
+  categoryId?: string | null;
   title: string;
   description: string;
   content: string;
   tags: string[];
+  docType: DocType;
+  documentCode?: string | null;
+  confidentiality: Confidentiality;
+  status: KnowledgeItemStatus;
+  validityDays: number;
+  approvedAt?: Date | null;
+  expiresAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface KnowledgeItemVersion {
+  id: string;
+  knowledgeItemId: string;
+  versionNumber: number;
+  title: string;
+  description: string;
+  content: string;
+  categoryId?: string | null;
+  tags: string[];
+  status: KnowledgeItemStatus;
+  changeReason?: string | null;
+  affectedSection?: string | null;
+  createdBy?: string | null;
+  createdByName?: string | null;
+  createdByEmail?: string | null;
+  createdAt: Date;
+}
+
+export type ApprovalDecision = 'pending' | 'approved' | 'rejected';
+
+export interface KnowledgeItemApproval {
+  id: string;
+  knowledgeItemId: string;
+  versionId?: string | null;
+  level: 1 | 2 | 3;
+  approverRole: string;
+  status: ApprovalDecision;
+  justification?: string | null;
+  decidedBy?: string | null;
+  decidedAt?: Date | null;
+  createdAt: Date;
+}
+
+export interface KnowledgeStats {
+  total: number;
+  current: number;
+  expired: number;
+  alert: number;
 }
 
 export interface ProcessFlow {

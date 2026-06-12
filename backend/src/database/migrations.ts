@@ -306,6 +306,85 @@ const migrations = [
     password_hash = '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
     is_active = TRUE;
   `,
+
+  // ============= CICLO DE VIDA, VERSIONAMENTO E WORKFLOW DE APROVAÇÃO =============
+  // Estende knowledge_items com tipo de documento, código identificador, categoria (FK),
+  // confidencialidade, validade e ciclo de vida completo (RF001-RF006 do SRS + FEAT-01)
+  `
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS doc_type VARCHAR(10) NOT NULL DEFAULT 'ARTICLE'
+    CHECK (doc_type IN ('ARTICLE','POL','POP','IOP','FOR','FLU'));
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS document_code VARCHAR(150);
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES categories(id) ON DELETE SET NULL;
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS confidentiality VARCHAR(20) NOT NULL DEFAULT 'interno'
+    CHECK (confidentiality IN ('publico','interno','restrito','confidencial'));
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS validity_days INT NOT NULL DEFAULT 365;
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP;
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_company_document_code
+    ON knowledge_items(company_id, document_code) WHERE document_code IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_knowledge_category_id ON knowledge_items(category_id);
+  CREATE INDEX IF NOT EXISTS idx_knowledge_expires_at ON knowledge_items(expires_at);
+
+  -- Amplia o ciclo de vida: draft, in_review, pending_approval, published, expired, archived
+  ALTER TABLE knowledge_items DROP CONSTRAINT IF EXISTS knowledge_items_status_check;
+  ALTER TABLE knowledge_items ADD CONSTRAINT knowledge_items_status_check
+    CHECK (status IN ('draft','in_review','pending_approval','published','expired','archived'));
+  `,
+
+  // knowledge_item_versions — snapshot a cada save + trilha de auditoria (RF-02/03, RF006)
+  `
+  CREATE TABLE IF NOT EXISTS knowledge_item_versions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    knowledge_item_id UUID NOT NULL REFERENCES knowledge_items(id) ON DELETE CASCADE,
+    version_number INT NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    description TEXT NOT NULL,
+    content TEXT NOT NULL,
+    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    tags JSONB DEFAULT '[]',
+    status VARCHAR(50) NOT NULL,
+    change_reason TEXT,
+    affected_section TEXT,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_by_name VARCHAR(255),
+    created_by_email VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (knowledge_item_id, version_number)
+  );
+  CREATE INDEX IF NOT EXISTS idx_knowledge_versions_item_id ON knowledge_item_versions(knowledge_item_id);
+  `,
+
+  // knowledge_item_approvals — workflow sequencial de 3 alçadas (RF004)
+  `
+  CREATE TABLE IF NOT EXISTS knowledge_item_approvals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    knowledge_item_id UUID NOT NULL REFERENCES knowledge_items(id) ON DELETE CASCADE,
+    version_id UUID REFERENCES knowledge_item_versions(id) ON DELETE SET NULL,
+    level SMALLINT NOT NULL CHECK (level IN (1,2,3)),
+    approver_role VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+    justification TEXT,
+    decided_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    decided_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (knowledge_item_id, version_id, level)
+  );
+  CREATE INDEX IF NOT EXISTS idx_knowledge_approvals_item_id ON knowledge_item_approvals(knowledge_item_id);
+  CREATE INDEX IF NOT EXISTS idx_knowledge_approvals_status ON knowledge_item_approvals(status);
+  `,
+
+  // knowledge_item_expiry_notifications — controla envio de alertas 30/15/5 dias (RF005)
+  `
+  CREATE TABLE IF NOT EXISTS knowledge_item_expiry_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    knowledge_item_id UUID NOT NULL REFERENCES knowledge_items(id) ON DELETE CASCADE,
+    milestone_days SMALLINT NOT NULL CHECK (milestone_days IN (30,15,5)),
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (knowledge_item_id, milestone_days)
+  );
+  `,
 ];
 
 export async function runMigrations() {

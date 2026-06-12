@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import path from 'path';
 import { config } from './config';
 import { runMigrations } from './database/migrations';
+import { scheduleExpirationCheck } from './jobs/expirationCheck';
 import knowledgeRoutes from './routes/knowledge';
 import flowsRoutes from './routes/flows';
 import authRoutes from './routes/auth';
@@ -54,6 +55,7 @@ const PORT = config.server.port;
 async function start() {
   try {
     await runMigrations();
+    scheduleExpirationCheck();
     app.listen(PORT, () => {
       console.log(`\n╔════════════════════════════════════════╗`);
       console.log(`║         GRC Flow API Started           ║`);

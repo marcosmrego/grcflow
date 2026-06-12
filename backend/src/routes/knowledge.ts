@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { knowledgeService } from '../services/KnowledgeService';
+import { userRepository } from '../repositories/UserRepository';
 import { validationResult, body, query, param } from 'express-validator';
 import { authMiddleware, requireAuth, AuthenticationError } from '../middleware';
 
@@ -15,6 +16,32 @@ const handleValidationErrors = (req: Request, res: Response, next: Function) => 
   }
   next();
 };
+
+const DOC_TYPES = ['ARTICLE', 'POL', 'POP', 'IOP', 'FOR', 'FLU'];
+const CONFIDENTIALITY_LEVELS = ['publico', 'interno', 'restrito', 'confidencial'];
+
+// O JWT não traz o nome do usuário (req.user.name vem vazio) — busca no banco
+// para preencher created_by_name na trilha de auditoria (RF006).
+const getAuthor = async (req: Request) => {
+  const user = req.user!;
+  const dbUser = await userRepository.findByIdInCompany(user.id, user.companyId);
+  return {
+    id: user.id,
+    name: dbUser?.name || user.name,
+    email: user.email,
+  };
+};
+
+// GET - KPIs do dashboard (Total, Em Dia, Vencidos, Alerta)
+router.get('/stats', async (req: Request, res: Response) => {
+  try {
+    if (!req.user) throw new AuthenticationError('User not authenticated');
+    const stats = await knowledgeService.getStats(req.user.companyId);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch knowledge stats' });
+  }
+});
 
 // GET - Listar todos os itens de conhecimento
 router.get(
@@ -114,6 +141,40 @@ router.get(
   }
 );
 
+// GET - Histórico de versões de um item (RF-03)
+router.get(
+  '/:id/versions',
+  [param('id').isUUID()],
+  handleValidationErrors,
+  async (req: Request, res: Response, next: Function) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { id } = req.params;
+      const versions = await knowledgeService.listVersions(id, req.user.companyId);
+      res.json(versions);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET - Status do workflow de aprovação (RF004)
+router.get(
+  '/:id/approvals',
+  [param('id').isUUID()],
+  handleValidationErrors,
+  async (req: Request, res: Response, next: Function) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { id } = req.params;
+      const approvals = await knowledgeService.listApprovals(id, req.user.companyId);
+      res.json(approvals);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // POST - Criar novo item de conhecimento
 router.post(
   '/',
@@ -123,23 +184,36 @@ router.post(
     body('description').notEmpty().isString(),
     body('content').notEmpty().isString(),
     body('tags').optional().isArray(),
+    body('docType').optional().isIn(DOC_TYPES),
+    body('documentCode').optional().isString(),
+    body('categoryId').optional().isUUID(),
+    body('confidentiality').optional().isIn(CONFIDENTIALITY_LEVELS),
+    body('validityDays').optional().isInt({ min: 1 }).toInt(),
   ],
   handleValidationErrors,
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: Function) => {
     try {
       if (!req.user) throw new AuthenticationError('User not authenticated');
-      const { category, title, description, content, tags } = req.body;
-      const item = await knowledgeService.createItem({
-        companyId: req.user.companyId,
-        category,
-        title,
-        description,
-        content,
-        tags: tags || [],
-      });
+      const { category, title, description, content, tags, docType, documentCode, categoryId, confidentiality, validityDays } = req.body;
+      const item = await knowledgeService.createItem(
+        {
+          companyId: req.user.companyId,
+          category,
+          categoryId: categoryId || null,
+          title,
+          description,
+          content,
+          tags: tags || [],
+          docType: docType || 'ARTICLE',
+          documentCode: documentCode || null,
+          confidentiality: confidentiality || 'interno',
+          validityDays: validityDays || 365,
+        },
+        await getAuthor(req)
+      );
       res.status(201).json(item);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to create knowledge item' });
+      next(error);
     }
   }
 );
@@ -154,19 +228,99 @@ router.put(
     body('description').optional().isString(),
     body('content').optional().isString(),
     body('tags').optional().isArray(),
+    body('documentCode').optional().isString(),
+    body('categoryId').optional().isUUID(),
+    body('confidentiality').optional().isIn(CONFIDENTIALITY_LEVELS),
+    body('validityDays').optional().isInt({ min: 1 }).toInt(),
+    body('changeReason').optional().isString(),
+    body('affectedSection').optional().isString(),
   ],
   handleValidationErrors,
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: Function) => {
     try {
       if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const updatedItem = await knowledgeService.updateItem(id, req.user.companyId, req.body);
+      const { changeReason, affectedSection, ...updates } = req.body;
+      const updatedItem = await knowledgeService.updateItem(id, req.user.companyId, updates, await getAuthor(req), {
+        changeReason,
+        affectedSection,
+      });
       if (!updatedItem) {
         return res.status(404).json({ error: 'Knowledge item not found' });
       }
       res.json(updatedItem);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to update knowledge item' });
+      next(error);
+    }
+  }
+);
+
+// POST - Restaurar uma versão anterior (RF-03)
+router.post(
+  '/:id/restore/:versionNumber',
+  [param('id').isUUID(), param('versionNumber').isInt({ min: 1 }).toInt()],
+  handleValidationErrors,
+  async (req: Request, res: Response, next: Function) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { id, versionNumber } = req.params;
+      const item = await knowledgeService.restoreVersion(id, req.user.companyId, parseInt(versionNumber, 10), await getAuthor(req));
+      res.json(item);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST - Enviar item para o workflow de aprovação em 3 alçadas (RF004)
+router.post(
+  '/:id/submit',
+  [param('id').isUUID()],
+  handleValidationErrors,
+  async (req: Request, res: Response, next: Function) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { id } = req.params;
+      const result = await knowledgeService.submitForApproval(id, req.user.companyId);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST - Aprovar alçada (RF004)
+router.post(
+  '/:id/approve',
+  [param('id').isUUID(), body('level').isInt({ min: 1, max: 3 }).toInt()],
+  handleValidationErrors,
+  async (req: Request, res: Response, next: Function) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { id } = req.params;
+      const { level } = req.body;
+      const result = await knowledgeService.decideApproval(id, req.user.companyId, level, 'approved', req.user.id);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST - Reprovar alçada (RF004) — exige justificativa
+router.post(
+  '/:id/reject',
+  [param('id').isUUID(), body('level').isInt({ min: 1, max: 3 }).toInt(), body('justification').notEmpty().isString()],
+  handleValidationErrors,
+  async (req: Request, res: Response, next: Function) => {
+    try {
+      if (!req.user) throw new AuthenticationError('User not authenticated');
+      const { id } = req.params;
+      const { level, justification } = req.body;
+      const result = await knowledgeService.decideApproval(id, req.user.companyId, level, 'rejected', req.user.id, justification);
+      res.json(result);
+    } catch (error) {
+      next(error);
     }
   }
 );
