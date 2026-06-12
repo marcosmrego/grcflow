@@ -124,6 +124,44 @@ const API = {
         });
     },
 
+    async getKnowledgeStats() {
+        return this.request('/knowledge/stats');
+    },
+
+    async getKnowledgeVersions(id) {
+        return this.request(`/knowledge/${id}/versions`);
+    },
+
+    async restoreKnowledgeVersion(id, versionNumber) {
+        return this.request(`/knowledge/${id}/restore/${versionNumber}`, {
+            method: 'POST'
+        });
+    },
+
+    async getKnowledgeApprovals(id) {
+        return this.request(`/knowledge/${id}/approvals`);
+    },
+
+    async submitKnowledgeForApproval(id) {
+        return this.request(`/knowledge/${id}/submit`, {
+            method: 'POST'
+        });
+    },
+
+    async approveKnowledge(id, level) {
+        return this.request(`/knowledge/${id}/approve`, {
+            method: 'POST',
+            body: JSON.stringify({ level })
+        });
+    },
+
+    async rejectKnowledge(id, level, justification) {
+        return this.request(`/knowledge/${id}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ level, justification })
+        });
+    },
+
     // Process Flows
     async getFlows(status = null) {
         let url = '/flows';

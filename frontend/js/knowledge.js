@@ -2,11 +2,49 @@
    Knowledge Management Page
    =========================== */
 
+const STATUS_LABELS = {
+    draft: 'Rascunho',
+    in_review: 'Em Revisão',
+    pending_approval: 'Aguardando Aprovação',
+    published: 'Aprovado',
+    expired: 'Vencido',
+    archived: 'Obsoleto'
+};
+
+const DOC_TYPE_LABELS = {
+    ARTICLE: 'Artigo',
+    POL: 'Política',
+    POP: 'Procedimento Operacional',
+    IOP: 'Instrução Operacional',
+    FOR: 'Formulário',
+    FLU: 'Fluxograma'
+};
+
+const CONFIDENTIALITY_LABELS = {
+    publico: 'Público',
+    interno: 'Interno',
+    restrito: 'Restrito',
+    confidencial: 'Confidencial'
+};
+
+const APPROVAL_LEVEL_LABELS = {
+    1: '1ª Alçada — Técnica',
+    2: '2ª Alçada — Compliance',
+    3: '3ª Alçada — Final'
+};
+
+const APPROVAL_STATUS_LABELS = {
+    pending: 'Pendente',
+    approved: 'Aprovado',
+    rejected: 'Reprovado'
+};
+
 const Knowledge = {
     currentItem: null,
     editingId: null,
 
     async init() {
+        await this.loadStats();
         await this.loadItems();
         this.setupEventListeners();
     },
@@ -24,10 +62,16 @@ const Knowledge = {
         if (newItemBtn) newItemBtn.addEventListener('click', () => this.openCreateModal());
 
         const searchInput = document.getElementById('search-input');
-        if (searchInput) searchInput.addEventListener('keyup', () => this.search());
+        if (searchInput) searchInput.addEventListener('keyup', () => this.applyFilters());
 
         const categoryFilter = document.getElementById('category-filter');
-        if (categoryFilter) categoryFilter.addEventListener('change', () => this.filterByCategory());
+        if (categoryFilter) categoryFilter.addEventListener('change', () => this.applyFilters());
+
+        const statusFilter = document.getElementById('status-filter');
+        if (statusFilter) statusFilter.addEventListener('change', () => this.applyFilters());
+
+        const docTypeSelect = document.getElementById('kb-doc-type');
+        if (docTypeSelect) docTypeSelect.addEventListener('change', () => this.toggleDocumentCodeField());
 
         const modalClose = document.getElementById('kb-modal-close');
         if (modalClose) modalClose.addEventListener('click', () => this.closeModal());
@@ -47,6 +91,14 @@ const Knowledge = {
         const viewModalEdit = document.getElementById('kb-view-modal-edit');
         if (viewModalEdit) viewModalEdit.addEventListener('click', () => this.editItem());
 
+        const submitApprovalBtn = document.getElementById('kb-submit-approval-btn');
+        if (submitApprovalBtn) submitApprovalBtn.addEventListener('click', () => this.submitForApproval());
+
+        const tabs = document.querySelectorAll('.kb-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+        });
+
         const list = document.getElementById('knowledge-list');
         if (list) {
             list.addEventListener('click', (e) => {
@@ -63,53 +115,23 @@ const Knowledge = {
         }
     },
 
+    async loadStats() {
+        try {
+            const stats = await API.getKnowledgeStats();
+            document.getElementById('kpi-total').textContent = stats.total;
+            document.getElementById('kpi-current').textContent = stats.current;
+            document.getElementById('kpi-alert').textContent = stats.alert;
+            document.getElementById('kpi-expired').textContent = stats.expired;
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    },
+
     async loadItems(limit = 100) {
         try {
-            const container = document.getElementById('knowledge-list');
-            if (!container) return;
-
             const items = await API.getKnowledge(limit);
-            const countEl = document.getElementById('item-count');
-
-            if (countEl) {
-                countEl.textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
-            }
-
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📚</div>
-                        <div class="empty-state-title">Nenhum item de conhecimento</div>
-                        <p class="empty-state-text">Comece adicionando itens à sua base de conhecimento</p>
-                        <button class="btn btn-primary" data-action="create">
-                            + Criar Primeiro Item
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = items.map(item => `
-                <div class="item-row">
-                    <div class="item-info">
-                        <div class="item-title">${this.escapeHtml(item.title)}</div>
-                        <div class="item-description">${this.escapeHtml(item.description)}</div>
-                        <div class="item-meta">
-                            <span>📂 ${this.escapeHtml(item.category)}</span>
-                            <span>📅 ${API.formatDateShort(item.createdAt)}</span>
-                            <span>🏷️ ${item.tags.length} tag${item.tags.length !== 1 ? 's' : ''}</span>
-                        </div>
-                        <div style="margin-top: 0.5rem;">
-                            ${item.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('')}
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="item-action" title="Ver detalhes" data-action="view" data-id="${item.id}">👁️</button>
-                        <button class="item-action" title="Editar" data-action="edit" data-id="${item.id}">✏️</button>
-                        <button class="item-action" title="Deletar" data-action="delete" data-id="${item.id}">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
+            this.allItems = items;
+            this.renderList(items);
         } catch (error) {
             console.error('Error loading items:', error);
             const container = document.getElementById('knowledge-list');
@@ -119,109 +141,103 @@ const Knowledge = {
         }
     },
 
-    async search() {
+    async applyFilters() {
         try {
-            const query = document.getElementById('search-input').value;
-            if (!query) {
-                await this.loadItems();
-                return;
-            }
-
-            const container = document.getElementById('knowledge-list');
-            container.innerHTML = '<div class="loading">Buscando...</div>';
-
-            const items = await API.searchKnowledge(query);
-            const countEl = document.getElementById('item-count');
-
-            if (countEl) {
-                countEl.textContent = `${items.length} resultado${items.length !== 1 ? 's' : ''}`;
-            }
-
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🔍</div>
-                        <div class="empty-state-title">Nenhum resultado</div>
-                        <p class="empty-state-text">Nenhum item corresponde à sua busca</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = items.map(item => `
-                <div class="item-row">
-                    <div class="item-info">
-                        <div class="item-title">${this.escapeHtml(item.title)}</div>
-                        <div class="item-description">${this.escapeHtml(item.description)}</div>
-                        <div class="item-meta">
-                            <span>📂 ${this.escapeHtml(item.category)}</span>
-                            <span>📅 ${API.formatDateShort(item.createdAt)}</span>
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="item-action" data-action="view" data-id="${item.id}">👁️</button>
-                        <button class="item-action" data-action="edit" data-id="${item.id}">✏️</button>
-                    </div>
-                </div>
-            `).join('');
-        } catch (error) {
-            console.error('Search error:', error);
-        }
-    },
-
-    async filterByCategory() {
-        try {
+            const query = document.getElementById('search-input').value.trim();
             const category = document.getElementById('category-filter').value;
-            
-            if (!category) {
-                await this.loadItems();
-                return;
-            }
+            const status = document.getElementById('status-filter').value;
 
             const container = document.getElementById('knowledge-list');
-            container.innerHTML = '<div class="loading">Filtrando...</div>';
+            container.innerHTML = '<div class="loading">Carregando...</div>';
 
-            const items = await API.getKnowledgeByCategory(category);
-            const countEl = document.getElementById('item-count');
-
-            if (countEl) {
-                countEl.textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+            let items;
+            if (query) {
+                items = await API.searchKnowledge(query);
+            } else if (category) {
+                items = await API.getKnowledgeByCategory(category);
+            } else {
+                items = await API.getKnowledge(100);
             }
 
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <p>Nenhum item nesta categoria</p>
-                    </div>
-                `;
-                return;
+            if (status) {
+                items = items.filter(item => item.status === status);
             }
 
-            container.innerHTML = items.map(item => `
-                <div class="item-row">
-                    <div class="item-info">
-                        <div class="item-title">${this.escapeHtml(item.title)}</div>
-                        <div class="item-description">${this.escapeHtml(item.description)}</div>
-                        <div class="item-meta">
-                            <span>📂 ${this.escapeHtml(item.category)}</span>
-                            <span>📅 ${API.formatDateShort(item.createdAt)}</span>
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="item-action" data-action="view" data-id="${item.id}">👁️</button>
-                        <button class="item-action" data-action="edit" data-id="${item.id}">✏️</button>
-                    </div>
-                </div>
-            `).join('');
+            this.renderList(items);
         } catch (error) {
             console.error('Filter error:', error);
         }
+    },
+
+    renderList(items) {
+        const container = document.getElementById('knowledge-list');
+        if (!container) return;
+
+        const countEl = document.getElementById('item-count');
+        if (countEl) {
+            countEl.textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+        }
+
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📚</div>
+                    <div class="empty-state-title">Nenhum item de conhecimento</div>
+                    <p class="empty-state-text">Comece adicionando itens à sua base de conhecimento</p>
+                    <button class="btn btn-primary" data-action="create">
+                        + Criar Primeiro Item
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = items.map(item => `
+            <div class="item-row">
+                <div class="item-info">
+                    <div class="item-title">
+                        ${this.escapeHtml(item.title)}
+                        <span class="status-badge status-${item.status}">${STATUS_LABELS[item.status] || item.status}</span>
+                    </div>
+                    <div class="item-description">${this.escapeHtml(item.description)}</div>
+                    <div class="item-meta">
+                        <span>📂 ${this.escapeHtml(item.category)}</span>
+                        <span>📄 ${DOC_TYPE_LABELS[item.docType] || item.docType}${item.documentCode ? ` — ${this.escapeHtml(item.documentCode)}` : ''}</span>
+                        <span>📅 ${API.formatDateShort(item.createdAt)}</span>
+                        ${item.expiresAt ? `<span>⏳ Válido até ${API.formatDateShort(item.expiresAt)}</span>` : ''}
+                    </div>
+                    <div style="margin-top: 0.5rem;">
+                        ${item.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="item-action" title="Ver detalhes" data-action="view" data-id="${item.id}">👁️</button>
+                    <button class="item-action" title="Editar" data-action="edit" data-id="${item.id}">✏️</button>
+                    <button class="item-action" title="Deletar" data-action="delete" data-id="${item.id}">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    toggleDocumentCodeField() {
+        const docType = document.getElementById('kb-doc-type').value;
+        const group = document.getElementById('kb-document-code-group');
+        const input = document.getElementById('kb-document-code');
+        const isControlled = docType !== 'ARTICLE';
+        group.style.display = isControlled ? '' : 'none';
+        if (!isControlled) input.value = '';
     },
 
     openCreateModal() {
         this.editingId = null;
         document.getElementById('modal-title').textContent = 'Novo Item de Conhecimento';
         document.getElementById('knowledge-form').reset();
+        document.getElementById('kb-doc-type').disabled = false;
+        document.getElementById('kb-doc-type').value = 'ARTICLE';
+        document.getElementById('kb-confidentiality').value = 'interno';
+        document.getElementById('kb-validity-days').value = 365;
+        document.getElementById('kb-change-reason-group').style.display = 'none';
+        this.toggleDocumentCodeField();
         this.toggleModal('knowledge-modal', true);
     },
 
@@ -229,14 +245,22 @@ const Knowledge = {
         try {
             const item = await API.getKnowledgeItem(id);
             this.editingId = id;
-            
+
             document.getElementById('modal-title').textContent = 'Editar Item de Conhecimento';
             document.getElementById('kb-category').value = item.category;
             document.getElementById('kb-title').value = item.title;
             document.getElementById('kb-description').value = item.description;
             document.getElementById('kb-content').value = item.content;
             document.getElementById('kb-tags').value = item.tags.join(', ');
-            
+            document.getElementById('kb-doc-type').value = item.docType;
+            document.getElementById('kb-doc-type').disabled = true;
+            document.getElementById('kb-document-code').value = item.documentCode || '';
+            document.getElementById('kb-confidentiality').value = item.confidentiality;
+            document.getElementById('kb-validity-days').value = item.validityDays;
+            document.getElementById('kb-change-reason').value = '';
+            document.getElementById('kb-change-reason-group').style.display = '';
+            this.toggleDocumentCodeField();
+
             this.toggleModal('knowledge-modal', true);
         } catch (error) {
             console.error('Error loading item:', error);
@@ -251,16 +275,36 @@ const Knowledge = {
             const description = document.getElementById('kb-description').value;
             const content = document.getElementById('kb-content').value;
             const tagsInput = document.getElementById('kb-tags').value;
-            const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : [];
+            const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const docType = document.getElementById('kb-doc-type').value;
+            const documentCode = document.getElementById('kb-document-code').value.trim();
+            const confidentiality = document.getElementById('kb-confidentiality').value;
+            const validityDays = parseInt(document.getElementById('kb-validity-days').value, 10) || 365;
+            const changeReason = document.getElementById('kb-change-reason').value.trim();
 
             if (!category || !title || !description || !content) {
                 alert('Preencha todos os campos obrigatórios');
                 return;
             }
 
-            const data = { category, title, description, content, tags };
+            if (docType !== 'ARTICLE' && !documentCode) {
+                alert('Informe o código do documento para este tipo de documento.');
+                return;
+            }
+
+            const data = {
+                category, title, description, content, tags,
+                docType,
+                confidentiality,
+                validityDays
+            };
+
+            if (docType !== 'ARTICLE') {
+                data.documentCode = documentCode;
+            }
 
             if (this.editingId) {
+                if (changeReason) data.changeReason = changeReason;
                 await API.updateKnowledge(this.editingId, data);
                 alert('Item atualizado com sucesso!');
             } else {
@@ -269,10 +313,11 @@ const Knowledge = {
             }
 
             this.closeModal();
+            await this.loadStats();
             await this.loadItems();
         } catch (error) {
             console.error('Error saving item:', error);
-            alert('Erro ao salvar item');
+            alert(error.message || 'Erro ao salvar item');
         }
     },
 
@@ -282,26 +327,75 @@ const Knowledge = {
             this.currentItem = item;
 
             document.getElementById('view-title').textContent = this.escapeHtml(item.title);
-            document.getElementById('view-content').innerHTML = `
-                <div class="item-details">
+            this.renderDetailsTab(item);
+            await this.renderVersionsTab(item);
+            await this.renderWorkflowTab(item);
+
+            document.getElementById('delete-btn').onclick = () => this.deleteItem(id);
+
+            const submitBtn = document.getElementById('kb-submit-approval-btn');
+            if (item.status === 'draft' || item.status === 'in_review') {
+                submitBtn.style.display = '';
+            } else {
+                submitBtn.style.display = 'none';
+            }
+
+            this.switchTab('details');
+            this.toggleModal('view-modal', true);
+        } catch (error) {
+            console.error('Error viewing item:', error);
+            alert('Erro ao carregar item');
+        }
+    },
+
+    renderDetailsTab(item) {
+        document.getElementById('tab-details').innerHTML = `
+            <div class="item-details">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <p><span class="status-badge status-${item.status}">${STATUS_LABELS[item.status] || item.status}</span></p>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Documento</label>
+                        <p>${DOC_TYPE_LABELS[item.docType] || item.docType}${item.documentCode ? ` — ${this.escapeHtml(item.documentCode)}` : ''}</p>
+                    </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>Categoria</label>
                         <p>${this.escapeHtml(item.category)}</p>
                     </div>
                     <div class="form-group">
-                        <label>Descrição</label>
-                        <p>${this.escapeHtml(item.description)}</p>
+                        <label>Confidencialidade</label>
+                        <p>${CONFIDENTIALITY_LABELS[item.confidentiality] || item.confidentiality}</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <p>${this.escapeHtml(item.description)}</p>
+                </div>
+                <div class="form-group">
+                    <label>Tags</label>
+                    <div>${item.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('') || '<span style="color:var(--text-secondary)">Sem tags</span>'}</div>
+                </div>
+                <div class="form-group">
+                    <label>Conteúdo</label>
+                    <div style="background-color: var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius); white-space: pre-wrap;">
+                        ${this.escapeHtml(item.content)}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Validade</label>
+                        <p>${item.validityDays} dias</p>
                     </div>
                     <div class="form-group">
-                        <label>Tags</label>
-                        <div>${item.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('')}</div>
+                        <label>Vencimento</label>
+                        <p>${item.expiresAt ? API.formatDate(item.expiresAt) : '—'}</p>
                     </div>
-                    <div class="form-group">
-                        <label>Conteúdo</label>
-                        <div style="background-color: var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius); white-space: pre-wrap;">
-                            ${this.escapeHtml(item.content)}
-                        </div>
-                    </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>Data de Criação</label>
                         <p>${API.formatDate(item.createdAt)}</p>
@@ -311,14 +405,174 @@ const Knowledge = {
                         <p>${API.formatDate(item.updatedAt)}</p>
                     </div>
                 </div>
+            </div>
+        `;
+    },
+
+    async renderVersionsTab(item) {
+        const container = document.getElementById('tab-versions');
+        container.innerHTML = '<div class="loading">Carregando versões...</div>';
+        try {
+            const versions = await API.getKnowledgeVersions(item.id);
+            if (versions.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-secondary)">Nenhuma versão encontrada.</p>';
+                return;
+            }
+
+            const latestVersion = versions[0].versionNumber;
+
+            container.innerHTML = `
+                <div class="version-list">
+                    ${versions.map(v => `
+                        <div class="version-row">
+                            <div>
+                                <strong>Versão ${v.versionNumber}</strong>
+                                <span class="status-badge status-${v.status}">${STATUS_LABELS[v.status] || v.status}</span>
+                                <div style="color: var(--text-secondary); margin-top: 0.25rem;">
+                                    ${v.changeReason ? `Motivo: ${this.escapeHtml(v.changeReason)}<br>` : ''}
+                                    ${v.affectedSection ? `Seção: ${this.escapeHtml(v.affectedSection)}<br>` : ''}
+                                    Por ${this.escapeHtml(v.createdByName || v.createdByEmail || 'desconhecido')} em ${API.formatDate(v.createdAt)}
+                                </div>
+                            </div>
+                            <div>
+                                ${v.versionNumber !== latestVersion
+                                    ? `<button class="btn btn-outline btn-sm" data-restore="${v.versionNumber}">Restaurar</button>`
+                                    : '<span class="badge badge-primary">Atual</span>'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
             `;
 
-            document.getElementById('delete-btn').onclick = () => this.deleteItem(id);
-            this.toggleModal('view-modal', true);
+            container.querySelectorAll('[data-restore]').forEach(btn => {
+                btn.addEventListener('click', () => this.restoreVersion(item.id, parseInt(btn.dataset.restore, 10)));
+            });
         } catch (error) {
-            console.error('Error viewing item:', error);
-            alert('Erro ao carregar item');
+            console.error('Error loading versions:', error);
+            container.innerHTML = '<div class="alert alert-danger">Erro ao carregar histórico de versões</div>';
         }
+    },
+
+    async renderWorkflowTab(item) {
+        const container = document.getElementById('tab-workflow');
+
+        if (item.status === 'draft') {
+            container.innerHTML = '<p style="color:var(--text-secondary)">Este documento ainda não foi enviado para aprovação. Use o botão "Enviar p/ Aprovação" para iniciar o workflow.</p>';
+            return;
+        }
+
+        container.innerHTML = '<div class="loading">Carregando workflow...</div>';
+        try {
+            const approvals = await API.getKnowledgeApprovals(item.id);
+            if (approvals.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-secondary)">Nenhum workflow de aprovação iniciado para este documento.</p>';
+                return;
+            }
+
+            // Próxima alçada pendente, na ordem sequencial
+            const sorted = [...approvals].sort((a, b) => a.level - b.level);
+            const nextPending = item.status === 'pending_approval'
+                ? sorted.find(a => a.status === 'pending')
+                : null;
+
+            container.innerHTML = `
+                <div class="approval-steps">
+                    ${sorted.map(a => `
+                        <div class="approval-step">
+                            <div class="approval-step-info">
+                                <strong>${APPROVAL_LEVEL_LABELS[a.level] || `Alçada ${a.level}`}</strong>
+                                <span class="status-badge status-${a.status === 'approved' ? 'published' : a.status === 'rejected' ? 'expired' : 'pending_approval'}">
+                                    ${APPROVAL_STATUS_LABELS[a.status] || a.status}
+                                </span>
+                                ${a.decidedAt ? `<span style="color:var(--text-secondary); font-size:0.85rem;">em ${API.formatDate(a.decidedAt)}</span>` : ''}
+                                ${a.justification ? `<span style="color:var(--text-secondary); font-size:0.85rem;">Justificativa: ${this.escapeHtml(a.justification)}</span>` : ''}
+                            </div>
+                            ${nextPending && nextPending.level === a.level ? `
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button class="btn btn-success btn-sm" data-approve="${a.level}">Aprovar</button>
+                                    <button class="btn btn-danger btn-sm" data-reject="${a.level}">Reprovar</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            container.querySelectorAll('[data-approve]').forEach(btn => {
+                btn.addEventListener('click', () => this.decideApproval(item.id, parseInt(btn.dataset.approve, 10), 'approved'));
+            });
+            container.querySelectorAll('[data-reject]').forEach(btn => {
+                btn.addEventListener('click', () => this.decideApproval(item.id, parseInt(btn.dataset.reject, 10), 'rejected'));
+            });
+        } catch (error) {
+            console.error('Error loading approvals:', error);
+            container.innerHTML = '<div class="alert alert-danger">Erro ao carregar workflow de aprovação</div>';
+        }
+    },
+
+    async submitForApproval() {
+        if (!this.currentItem) return;
+        if (!confirm('Enviar este documento para o workflow de aprovação em 3 alçadas?')) return;
+
+        try {
+            await API.submitKnowledgeForApproval(this.currentItem.id);
+            alert('Documento enviado para aprovação!');
+            await this.viewItem(this.currentItem.id);
+            await this.loadStats();
+            await this.applyFilters();
+        } catch (error) {
+            console.error('Error submitting for approval:', error);
+            alert(error.message || 'Erro ao enviar para aprovação');
+        }
+    },
+
+    async decideApproval(id, level, decision) {
+        try {
+            if (decision === 'approved') {
+                if (!confirm(`Confirmar aprovação da ${APPROVAL_LEVEL_LABELS[level] || `alçada ${level}`}?`)) return;
+                await API.approveKnowledge(id, level);
+                alert('Alçada aprovada!');
+            } else {
+                const justification = prompt('Justificativa para reprovação (obrigatória):');
+                if (!justification) {
+                    alert('A reprovação requer uma justificativa.');
+                    return;
+                }
+                await API.rejectKnowledge(id, level, justification);
+                alert('Alçada reprovada. O documento voltou para "Em Revisão".');
+            }
+
+            await this.viewItem(id);
+            await this.loadStats();
+            await this.applyFilters();
+        } catch (error) {
+            console.error('Error deciding approval:', error);
+            alert(error.message || 'Erro ao registrar decisão');
+        }
+    },
+
+    async restoreVersion(id, versionNumber) {
+        if (!confirm(`Restaurar a versão ${versionNumber}? Isso criará uma nova versão com este conteúdo.`)) return;
+
+        try {
+            await API.restoreKnowledgeVersion(id, versionNumber);
+            alert('Versão restaurada com sucesso!');
+            await this.viewItem(id);
+            await this.loadStats();
+            await this.applyFilters();
+        } catch (error) {
+            console.error('Error restoring version:', error);
+            alert(error.message || 'Erro ao restaurar versão');
+        }
+    },
+
+    switchTab(tabName) {
+        document.querySelectorAll('.kb-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+        document.querySelectorAll('.kb-tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `tab-${tabName}`);
+        });
     },
 
     editItem() {
@@ -338,6 +592,7 @@ const Knowledge = {
             await API.deleteKnowledge(itemId);
             alert('Item deletado com sucesso!');
             this.closeViewModal();
+            await this.loadStats();
             await this.loadItems();
         } catch (error) {
             console.error('Error deleting item:', error);

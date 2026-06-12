@@ -46,6 +46,38 @@
                 </div>
             </header>
 
+            <!-- KPIs -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon knowledge">📚</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="kpi-total">-</div>
+                        <div class="stat-label">Total de Documentos</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon published">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="kpi-current">-</div>
+                        <div class="stat-label">Em Dia</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon draft">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="kpi-alert">-</div>
+                        <div class="stat-label">Alerta de Vencimento (≤30 dias)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon flows">⛔</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="kpi-expired">-</div>
+                        <div class="stat-label">Vencidos</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Filter Bar -->
             <div class="card" style="margin-bottom: 2rem;">
                 <div class="card-body">
@@ -64,6 +96,17 @@
                                 <option value="Procedimentos">Procedimentos</option>
                                 <option value="Controles Internos">Controles Internos</option>
                                 <option value="Segurança da Informação">Segurança da Informação</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select class="form-control" id="status-filter">
+                                <option value="">📌 Todos os status</option>
+                                <option value="draft">Rascunho</option>
+                                <option value="in_review">Em Revisão</option>
+                                <option value="pending_approval">Aguardando Aprovação</option>
+                                <option value="published">Aprovado</option>
+                                <option value="expired">Vencido</option>
+                                <option value="archived">Obsoleto</option>
                             </select>
                         </div>
                     </div>
@@ -94,42 +137,84 @@
             </div>
             <div class="modal-body">
                 <form id="knowledge-form">
-                    <div class="form-group">
-                        <label for="kb-category">Categoria *</label>
-                        <select class="form-control" id="kb-category" required>
-                            <option value="">Selecione uma categoria</option>
-                            <option value="Governança">Governança</option>
-                            <option value="Gestão de Riscos">Gestão de Riscos</option>
-                            <option value="Conformidade">Conformidade</option>
-                            <option value="Políticas">Políticas</option>
-                            <option value="Procedimentos">Procedimentos</option>
-                            <option value="Controles Internos">Controles Internos</option>
-                            <option value="Segurança da Informação">Segurança da Informação</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kb-category">Categoria *</label>
+                            <select class="form-control" id="kb-category" required>
+                                <option value="">Selecione uma categoria</option>
+                                <option value="Governança">Governança</option>
+                                <option value="Gestão de Riscos">Gestão de Riscos</option>
+                                <option value="Conformidade">Conformidade</option>
+                                <option value="Políticas">Políticas</option>
+                                <option value="Procedimentos">Procedimentos</option>
+                                <option value="Controles Internos">Controles Internos</option>
+                                <option value="Segurança da Informação">Segurança da Informação</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="kb-doc-type">Tipo de Documento *</label>
+                            <select class="form-control" id="kb-doc-type" required>
+                                <option value="ARTICLE">Artigo (livre)</option>
+                                <option value="POL">POL — Política</option>
+                                <option value="POP">POP — Procedimento Operacional</option>
+                                <option value="IOP">IOP — Instrução Operacional</option>
+                                <option value="FOR">FOR — Formulário</option>
+                                <option value="FLU">FLU — Fluxograma</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="kb-document-code-group" style="display:none;">
+                        <label for="kb-document-code">Código do Documento *</label>
+                        <input type="text" class="form-control" id="kb-document-code"
+                               placeholder="Ex: POL_GRC_ALFA_001">
+                        <small style="color: var(--text-secondary);">Formato: TIPO_AREA_CLIENTE_NUM (ex: POL_GRC_ALFA_001)</small>
                     </div>
 
                     <div class="form-group">
                         <label for="kb-title">Título *</label>
-                        <input type="text" class="form-control" id="kb-title" required 
+                        <input type="text" class="form-control" id="kb-title" required
                                placeholder="Título do item de conhecimento">
                     </div>
 
                     <div class="form-group">
                         <label for="kb-description">Descrição *</label>
-                        <input type="text" class="form-control" id="kb-description" required 
+                        <input type="text" class="form-control" id="kb-description" required
                                placeholder="Descrição breve">
                     </div>
 
                     <div class="form-group">
                         <label for="kb-content">Conteúdo *</label>
-                        <textarea class="form-control" id="kb-content" required 
+                        <textarea class="form-control" id="kb-content" required
                                   placeholder="Conteúdo completo do documento"></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="kb-tags">Tags (separadas por vírgula)</label>
-                        <input type="text" class="form-control" id="kb-tags" 
+                        <input type="text" class="form-control" id="kb-tags"
                                placeholder="governance, approved, urgent">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kb-confidentiality">Confidencialidade</label>
+                            <select class="form-control" id="kb-confidentiality">
+                                <option value="publico">Público</option>
+                                <option value="interno" selected>Interno</option>
+                                <option value="restrito">Restrito</option>
+                                <option value="confidencial">Confidencial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="kb-validity-days">Validade (dias)</label>
+                            <input type="number" class="form-control" id="kb-validity-days" min="1" value="365">
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="kb-change-reason-group" style="display:none;">
+                        <label for="kb-change-reason">Motivo da alteração</label>
+                        <input type="text" class="form-control" id="kb-change-reason"
+                               placeholder="Ex: Atualização anual de revisão">
                     </div>
                 </form>
             </div>
@@ -142,17 +227,31 @@
 
     <!-- View Modal -->
     <div id="view-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <h2 id="view-title">Item de Conhecimento</h2>
                 <button class="modal-close" id="kb-view-modal-close">✕</button>
             </div>
-            <div class="modal-body" id="view-content">
-                <!-- Content loaded dynamically -->
+            <div class="modal-body">
+                <div class="kb-tabs">
+                    <div class="kb-tab active" data-tab="details">Detalhes</div>
+                    <div class="kb-tab" data-tab="versions">Histórico de Versões</div>
+                    <div class="kb-tab" data-tab="workflow">Workflow de Aprovação</div>
+                </div>
+                <div class="kb-tab-content active" id="tab-details">
+                    <!-- Content loaded dynamically -->
+                </div>
+                <div class="kb-tab-content" id="tab-versions">
+                    <!-- Content loaded dynamically -->
+                </div>
+                <div class="kb-tab-content" id="tab-workflow">
+                    <!-- Content loaded dynamically -->
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-danger" id="delete-btn">Deletar</button>
                 <button class="btn btn-secondary" id="kb-view-modal-close-footer">Fechar</button>
+                <button class="btn btn-primary" id="kb-submit-approval-btn" style="display:none;">Enviar p/ Aprovação</button>
                 <button class="btn btn-primary" id="kb-view-modal-edit">Editar</button>
             </div>
         </div>
