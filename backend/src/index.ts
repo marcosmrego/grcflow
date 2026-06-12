@@ -18,8 +18,11 @@ import {
   errorHandler,
   notFoundHandler,
 } from './middleware';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: APP_VERSION } = require('../package.json');
 
 const app = express();
+const startedAt = new Date().toISOString();
 
 app.set('trust proxy', 1);
 
@@ -35,7 +38,16 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString(), environment: config.server.nodeEnv } });
+  res.json({
+    success: true,
+    data: {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: config.server.nodeEnv,
+      version: APP_VERSION,
+      startedAt,
+    },
+  });
 });
 
 // API

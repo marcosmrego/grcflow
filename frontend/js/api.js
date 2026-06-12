@@ -28,6 +28,7 @@ const API = {
         this.checkHealth();
         this.renderUserInfo();
         this.bindLogout();
+        this.bindSystemInfo();
     },
 
     bindLogout() {
@@ -38,6 +39,109 @@ const API = {
                 this.logout();
             });
         }
+    },
+
+    bindSystemInfo() {
+        const btn = document.getElementById('system-info-btn');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.openSystemInfoModal();
+            });
+        }
+    },
+
+    async openSystemInfoModal() {
+        this.injectSystemInfoModal();
+        const modal = document.getElementById('system-info-modal');
+        modal.classList.add('active');
+
+        const setField = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        setField('si-base-url', this.baseURL);
+
+        const healthURL = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000/health'
+            : '/health';
+
+        setField('si-status', 'Verificando...');
+        setField('si-version', '-');
+        setField('si-environment', '-');
+        setField('si-started-at', '-');
+        setField('si-checked-at', this.formatDate(new Date().toISOString()));
+
+        try {
+            const response = await fetch(healthURL);
+            const body = await response.json();
+            if (response.ok && body?.data) {
+                setField('si-status', '🟢 Online');
+                setField('si-version', body.data.version || '-');
+                setField('si-environment', body.data.environment || '-');
+                setField('si-started-at', body.data.startedAt ? this.formatDate(body.data.startedAt) : '-');
+            } else {
+                setField('si-status', '🔴 Offline');
+            }
+        } catch (error) {
+            setField('si-status', '🔴 Offline');
+        }
+    },
+
+    injectSystemInfoModal() {
+        if (document.getElementById('system-info-modal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'system-info-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 480px;">
+                <div class="modal-header">
+                    <h2>ℹ️ Informações do Sistema</h2>
+                    <button class="modal-close" id="si-modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">API Status:</span>
+                            <span class="info-value" id="si-status">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">URL Base:</span>
+                            <span class="info-value" id="si-base-url">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Versão:</span>
+                            <span class="info-value" id="si-version">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Ambiente:</span>
+                            <span class="info-value" id="si-environment">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Servidor iniciado em:</span>
+                            <span class="info-value" id="si-started-at">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Verificado em:</span>
+                            <span class="info-value" id="si-checked-at">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="si-modal-close-footer">Fechar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const close = () => modal.classList.remove('active');
+        document.getElementById('si-modal-close').addEventListener('click', close);
+        document.getElementById('si-modal-close-footer').addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
     },
 
     renderUserInfo() {
