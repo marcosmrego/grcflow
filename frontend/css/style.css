@@ -284,6 +284,16 @@ textarea.form-control {
     grid-template-columns: 1fr;
 }
 
+.form-row-3 {
+    grid-template-columns: 2fr 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+    .form-row-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Cards */
 .card {
     background: var(--bg-primary);
