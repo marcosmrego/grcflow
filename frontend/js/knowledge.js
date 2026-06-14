@@ -42,11 +42,45 @@ const APPROVAL_STATUS_LABELS = {
 const Knowledge = {
     currentItem: null,
     editingId: null,
+    quill: null,
 
     async init() {
+        this.initEditor();
         await this.loadStats();
         await this.loadItems();
         this.setupEventListeners();
+    },
+
+    initEditor() {
+        const editorEl = document.getElementById('kb-content-editor');
+        if (!editorEl || typeof Quill === 'undefined') return;
+
+        this.quill = new Quill(editorEl, {
+            theme: 'snow',
+            placeholder: 'Conteúdo completo do documento',
+            modules: {
+                toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['blockquote', 'link'],
+                    ['clean']
+                ]
+            }
+        });
+    },
+
+    /** Converte conteúdo legado (texto puro com quebras de linha) em HTML para o editor */
+    contentToHtml(content) {
+        if (!content) return '';
+        // Heurística: só trata como HTML já formatado se contiver tags
+        // que o próprio editor (Quill) gera. Evita falso-positivo com
+        // texto puro que contenha "<algo>" literal.
+        if (/<(p|h[1-6]|ul|ol|li|blockquote|strong|em|u|s|a\s|br|img|table)[\s/>]/i.test(content)) return content;
+        return content
+            .split(/\r?\n/)
+            .map(line => `<p>${this.escapeHtml(line) || '<br>'}</p>`)
+            .join('');
     },
 
     setupEventListeners() {
@@ -232,6 +266,7 @@ const Knowledge = {
         this.editingId = null;
         document.getElementById('modal-title').textContent = 'Novo Item de Conhecimento';
         document.getElementById('knowledge-form').reset();
+        if (this.quill) this.quill.setText('');
         document.getElementById('kb-doc-type').disabled = false;
         document.getElementById('kb-doc-type').value = 'ARTICLE';
         document.getElementById('kb-confidentiality').value = 'interno';
@@ -250,7 +285,7 @@ const Knowledge = {
             document.getElementById('kb-category').value = item.category;
             document.getElementById('kb-title').value = item.title;
             document.getElementById('kb-description').value = item.description;
-            document.getElementById('kb-content').value = item.content;
+            if (this.quill) this.quill.root.innerHTML = this.contentToHtml(item.content);
             document.getElementById('kb-tags').value = item.tags.join(', ');
             document.getElementById('kb-doc-type').value = item.docType;
             document.getElementById('kb-doc-type').disabled = true;
@@ -273,7 +308,8 @@ const Knowledge = {
             const category = document.getElementById('kb-category').value;
             const title = document.getElementById('kb-title').value;
             const description = document.getElementById('kb-description').value;
-            const content = document.getElementById('kb-content').value;
+            const content = this.quill ? this.quill.root.innerHTML : '';
+            const isContentEmpty = this.quill ? this.quill.getText().trim().length === 0 : !content;
             const tagsInput = document.getElementById('kb-tags').value;
             const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
             const docType = document.getElementById('kb-doc-type').value;
@@ -282,7 +318,7 @@ const Knowledge = {
             const validityDays = parseInt(document.getElementById('kb-validity-days').value, 10) || 365;
             const changeReason = document.getElementById('kb-change-reason').value.trim();
 
-            if (!category || !title || !description || !content) {
+            if (!category || !title || !description || isContentEmpty) {
                 alert('Preencha todos os campos obrigatórios');
                 return;
             }
@@ -381,8 +417,8 @@ const Knowledge = {
                 </div>
                 <div class="form-group">
                     <label>Conteúdo</label>
-                    <div style="background-color: var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius); white-space: pre-wrap;">
-                        ${this.escapeHtml(item.content)}
+                    <div class="kb-content-rendered ql-editor">
+                        ${this.renderContent(item.content)}
                     </div>
                 </div>
                 <div class="form-row">
@@ -621,6 +657,11 @@ const Knowledge = {
         } else {
             modal.classList.remove('active');
         }
+    },
+
+    renderContent(content) {
+        const html = this.contentToHtml(content);
+        return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : this.escapeHtml(content);
     },
 
     escapeHtml(text) {

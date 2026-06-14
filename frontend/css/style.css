@@ -274,6 +274,44 @@ textarea.form-control {
     min-height: 120px;
 }
 
+/* Rich text editor (Quill) */
+.kb-editor {
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+}
+
+.kb-editor .ql-toolbar {
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    background-color: var(--bg-secondary);
+}
+
+.kb-editor .ql-container {
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    min-height: 200px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.kb-editor .ql-editor {
+    min-height: 200px;
+}
+
+.kb-editor.ql-container:focus-within,
+.kb-editor:focus-within .ql-container {
+    border-color: var(--primary);
+}
+
+/* Rendered rich text content (view mode) */
+.kb-content-rendered {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    height: auto;
+    overflow: visible;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
