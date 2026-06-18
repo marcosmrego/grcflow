@@ -394,6 +394,27 @@ const migrations = [
   ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS tower_id UUID REFERENCES towers(id) ON DELETE SET NULL;
   CREATE INDEX IF NOT EXISTS idx_knowledge_tower_id ON knowledge_items(tower_id);
   `,
+
+  // Flag "master": acesso a funcionalidades exclusivas, além das permissões normais do role.
+  // Não exposta nas rotas de CRUD de usuários (não pode ser setada via API) — só manualmente,
+  // como abaixo, para evitar que qualquer admin se autopromova.
+  `
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_master BOOLEAN NOT NULL DEFAULT FALSE;
+  ALTER TABLE system_users ADD COLUMN IF NOT EXISTS is_master BOOLEAN NOT NULL DEFAULT FALSE;
+  `,
+
+  // Marcos (dono do produto): a conta da Expansao-AI vira master, e ganha uma conta pessoal de
+  // plataforma (super_admin) com a MESMA senha que ele já usa — copiada do hash existente, nunca
+  // em texto puro. DO NOTHING preserva qualquer senha que ele já tenha trocado manualmente depois.
+  `
+  UPDATE users SET is_master = TRUE WHERE email = 'admin@expansao-ai.com.br';
+
+  INSERT INTO system_users (email, name, password_hash, role, is_active, is_master)
+  SELECT 'admin@expansao-ai.com.br', 'Marcos Rego', u.password_hash, 'super_admin', TRUE, TRUE
+  FROM users u
+  WHERE u.email = 'admin@expansao-ai.com.br'
+  ON CONFLICT (email) DO NOTHING;
+  `,
 ];
 
 // Cria os admins iniciais (Empresa Demo + plataforma) somente na primeira execução e somente

@@ -150,6 +150,9 @@ export interface User {
   role: UserRole;
   approval_group?: ApprovalGroup | null;
   is_active: boolean;
+  // Acesso a funcionalidades exclusivas, além das permissões normais do role. Não pode ser
+  // setada via API (CRUD de usuários) — apenas manualmente, para evitar autopromoção.
+  is_master?: boolean;
   last_login?: Date;
   created_at: Date;
   updated_at: Date;
@@ -162,6 +165,7 @@ export interface UserPayload {
   email: string;
   name: string;
   role: UserRole;
+  isMaster: boolean;
 }
 
 export interface AuthTokens {
@@ -174,6 +178,7 @@ export interface JWTPayload {
   companyId: string;
   email: string;
   role: UserRole;
+  isMaster: boolean;
   iat: number;
   exp: number;
 }
@@ -189,6 +194,7 @@ export interface SystemUser {
   password_hash: string;
   role: SystemUserRole;
   is_active: boolean;
+  is_master?: boolean;
   last_login?: Date;
   created_at: Date;
   updated_at: Date;
@@ -200,12 +206,14 @@ export interface SystemUserPayload {
   email: string;
   name: string;
   role: SystemUserRole;
+  isMaster: boolean;
 }
 
 export interface SystemJWTPayload {
   sub: string; // system user id
   email: string;
   role: SystemUserRole;
+  isMaster: boolean;
   iat: number;
   exp: number;
 }

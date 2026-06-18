@@ -18,6 +18,7 @@ export class AuthService {
       companyId: user.company_id,
       email: user.email,
       role: user.role,
+      isMaster: user.is_master ?? false,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
     };
@@ -87,6 +88,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      isMaster: user.is_master ?? false,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
     };
@@ -170,6 +172,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
+      isMaster: user.is_master ?? false,
     };
   }
 
@@ -179,6 +182,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
+      isMaster: user.is_master ?? false,
     };
   }
 }

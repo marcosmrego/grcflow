@@ -190,6 +190,26 @@ export const requireSystemAdmin = (req: Request, res: Response, next: NextFuncti
 };
 
 /**
+ * Middleware to require the "master" flag (exclusive features, on top of normal role
+ * permissions). Works for both company users (req.user) and system users (req.systemUser).
+ */
+export const requireMaster = (req: Request, res: Response, next: NextFunction) => {
+  const isMaster = req.user?.isMaster || req.systemUser?.isMaster;
+
+  if (!isMaster) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Master access required',
+      },
+    });
+  }
+
+  next();
+};
+
+/**
  * Middleware to require one of multiple permissions
  */
 export const requireAnyPermission = (...permissions: Permission[]) => {

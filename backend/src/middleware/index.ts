@@ -13,6 +13,7 @@ export {
   requirePermission,
   requireAdmin,
   requireEditor,
+  requireMaster,
   requireAnyPermission,
   requireAllPermissions,
   requireSystemRole,

@@ -64,6 +64,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
         email: decoded.email,
         name: '', // Name not in JWT, should be fetched from DB if needed
         role: decoded.role,
+        isMaster: decoded.isMaster ?? false,
       };
 
       req.token = token;
@@ -130,6 +131,7 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
           email: decoded.email,
           name: '',
           role: decoded.role,
+          isMaster: decoded.isMaster ?? false,
         };
         req.token = token;
       }
@@ -195,6 +197,7 @@ export const systemAuthMiddleware = (req: Request, res: Response, next: NextFunc
         email: decoded.email,
         name: '',
         role: decoded.role,
+        isMaster: decoded.isMaster ?? false,
       };
 
       req.token = token;
