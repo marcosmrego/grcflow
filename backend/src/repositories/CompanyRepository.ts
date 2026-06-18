@@ -160,21 +160,43 @@ export class CompanyRepository {
     );
   }
 
-  async list(limit: number = 20, offset: number = 0): Promise<{ companies: Company[]; total: number }> {
+  async list(limit: number = 20, offset: number = 0, search?: string): Promise<{ companies: Company[]; total: number }> {
+    const trimmed = search?.trim();
+    const whereClause = trimmed
+      ? `WHERE deleted_at IS NULL AND (name ILIKE $1 OR legal_name ILIKE $1 OR document ILIKE $1)`
+      : `WHERE deleted_at IS NULL`;
+    const searchParams = trimmed ? [`%${trimmed}%`] : [];
+
     const countResult = await db.query(
-      `SELECT COUNT(*) as count FROM companies WHERE deleted_at IS NULL`
+      `SELECT COUNT(*) as count FROM companies ${whereClause}`,
+      searchParams
     );
     const total = parseInt(countResult.rows[0].count);
 
+    const limitIdx = searchParams.length + 1;
+    const offsetIdx = searchParams.length + 2;
     const result = await db.query(
-      `SELECT * FROM companies
-       WHERE deleted_at IS NULL
-       ORDER BY created_at DESC
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
+      `SELECT * FROM companies ${whereClause} ORDER BY name ASC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+      [...searchParams, limit, offset]
     );
 
     return { companies: result.rows, total };
+  }
+
+  async getStats(): Promise<{ total: number; active: number; inactive: number }> {
+    const result = await db.query(
+      `SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE is_active) AS active,
+        COUNT(*) FILTER (WHERE NOT is_active) AS inactive
+       FROM companies WHERE deleted_at IS NULL;`
+    );
+    const row = result.rows[0];
+    return {
+      total: parseInt(row.total, 10),
+      active: parseInt(row.active, 10),
+      inactive: parseInt(row.inactive, 10),
+    };
   }
 
   async nameExists(name: string): Promise<boolean> {

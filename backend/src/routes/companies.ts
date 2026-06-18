@@ -45,14 +45,16 @@ router.get(
   [
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('search').optional().isString().trim(),
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
     const page = (req.query.page as any) || 1;
     const limit = (req.query.limit as any) || 20;
+    const search = req.query.search as string | undefined;
     const offset = (page - 1) * limit;
 
-    const { companies, total } = await companyService.listCompanies(limit, offset);
+    const { companies, total } = await companyService.listCompanies(limit, offset, search);
 
     const response: ApiResponse<any> = {
       success: true,
@@ -69,6 +71,20 @@ router.get(
       },
     };
 
+    res.json(response);
+  })
+);
+
+/**
+ * GET /api/companies/stats
+ * Total / active / inactive company counts (system admin only).
+ * Registered before "/:id" so "stats" isn't swallowed by the UUID param route.
+ */
+router.get(
+  '/stats',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const stats = await companyService.getStats();
+    const response: ApiResponse<any> = { success: true, data: stats };
     res.json(response);
   })
 );

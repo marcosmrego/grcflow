@@ -8,9 +8,14 @@ const Companies = {
     usersModalCompany: null,
     modulesModalCompany: null,
     invoicesModalCompany: null,
+    currentPage: 1,
+    pageSize: 10,
+    searchQuery: '',
+    searchDebounceTimer: null,
 
     async init() {
         this.setupEventListeners();
+        await this.loadStats();
         await this.loadCompanies();
     },
 
@@ -27,7 +32,7 @@ const Companies = {
         if (newBtn) newBtn.addEventListener('click', () => this.openCreateModal());
 
         const searchInput = document.getElementById('search-input');
-        if (searchInput) searchInput.addEventListener('keyup', () => this.search());
+        if (searchInput) searchInput.addEventListener('input', () => this.search());
 
         const modalClose = document.getElementById('company-modal-close');
         if (modalClose) modalClose.addEventListener('click', () => this.closeModal());
@@ -94,9 +99,9 @@ const Companies = {
             });
         }
 
-        const list = document.getElementById('companies-list');
-        if (list) {
-            list.addEventListener('click', (e) => {
+        const tableBody = document.getElementById('companies-table-body');
+        if (tableBody) {
+            tableBody.addEventListener('click', (e) => {
                 const btn = e.target.closest('[data-action]');
                 if (!btn) return;
                 const id = btn.dataset.id;
@@ -112,42 +117,67 @@ const Companies = {
                 }
             });
         }
+
+        const pagination = document.getElementById('companies-pagination');
+        if (pagination) {
+            pagination.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-page]');
+                if (!btn) return;
+                this.goToPage(parseInt(btn.dataset.page, 10));
+            });
+        }
+    },
+
+    async loadStats() {
+        try {
+            const stats = await AdminAPI.getCompanyStats();
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-active').textContent = stats.active;
+            document.getElementById('stat-inactive').textContent = stats.inactive;
+        } catch (error) {
+            console.error('Error loading company stats:', error);
+        }
     },
 
     async loadCompanies() {
-        try {
-            const container = document.getElementById('companies-list');
-            if (!container) return;
+        const tableBody = document.getElementById('companies-table-body');
+        if (!tableBody) return;
 
-            const result = await AdminAPI.getCompanies();
+        try {
+            const result = await AdminAPI.getCompanies(this.currentPage, this.pageSize, this.searchQuery);
             const companies = result.items || [];
+            const pagination = result.pagination || { total: companies.length, page: 1, pages: 1 };
             const countEl = document.getElementById('company-count');
 
             if (countEl) {
-                countEl.textContent = `${companies.length} empresa${companies.length !== 1 ? 's' : ''}`;
+                countEl.textContent = this.searchQuery
+                    ? `${pagination.total} resultado${pagination.total !== 1 ? 's' : ''}`
+                    : `${pagination.total} empresa${pagination.total !== 1 ? 's' : ''}`;
             }
 
             if (companies.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🏢</div>
-                        <div class="empty-state-title">Nenhuma empresa cadastrada</div>
-                        <p class="empty-state-text">Comece cadastrando a primeira empresa da plataforma</p>
-                        <button class="btn btn-primary" data-action="create">
-                            + Criar Primeira Empresa
-                        </button>
-                    </div>
+                tableBody.innerHTML = `
+                    <tr><td colspan="7">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">${this.searchQuery ? '🔍' : '🏢'}</div>
+                            <div class="empty-state-title">${this.searchQuery ? 'Nenhum resultado' : 'Nenhuma empresa cadastrada'}</div>
+                            ${this.searchQuery ? '' : `
+                                <p class="empty-state-text">Comece cadastrando a primeira empresa da plataforma</p>
+                                <button class="btn btn-primary" data-action="create">+ Criar Primeira Empresa</button>
+                            `}
+                        </div>
+                    </td></tr>
                 `;
+                document.getElementById('companies-pagination').innerHTML = '';
                 return;
             }
 
-            container.innerHTML = companies.map(company => this.renderCompanyRow(company)).join('');
+            tableBody.innerHTML = companies.map(company => this.renderCompanyRow(company)).join('');
+            this.renderPagination(pagination);
         } catch (error) {
             console.error('Error loading companies:', error);
-            const container = document.getElementById('companies-list');
-            if (container) {
-                container.innerHTML = '<div class="alert alert-danger">Erro ao carregar empresas</div>';
-            }
+            tableBody.innerHTML = '<tr><td colspan="7"><div class="alert alert-danger">Erro ao carregar empresas</div></td></tr>';
+            document.getElementById('companies-pagination').innerHTML = '';
         }
     },
 
@@ -155,67 +185,61 @@ const Companies = {
         const statusBadge = company.is_active
             ? '<span class="badge badge-primary">✅ Ativa</span>'
             : '<span class="badge" style="background: var(--danger);">⛔ Inativa</span>';
-        const monthlyFee = company.monthly_fee != null ? this.formatCurrency(company.monthly_fee) : 'Não definida';
+        const monthlyFee = company.monthly_fee != null ? this.formatCurrency(company.monthly_fee) : '—';
+        const cityState = [company.city, company.state].filter(Boolean).join('/') || '—';
 
         return `
-            <div class="item-row">
-                <div class="item-info">
-                    <div class="item-title">🏢 ${this.escapeHtml(company.name)}</div>
-                    <div class="item-description">${this.escapeHtml(company.document || 'Sem documento cadastrado')}</div>
-                    <div class="item-meta">
-                        <span>📅 ${AdminAPI.formatDate(company.created_at)}</span>
-                        <span>💰 ${monthlyFee}</span>
-                        <span>${statusBadge}</span>
+            <tr>
+                <td>🏢 ${this.escapeHtml(company.name)}</td>
+                <td>${this.escapeHtml(company.legal_name || '—')}</td>
+                <td>${this.escapeHtml(company.document || '—')}</td>
+                <td>${this.escapeHtml(cityState)}</td>
+                <td>${monthlyFee}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="item-actions" style="display:flex; flex-wrap:nowrap;">
+                        <button class="item-action" title="Ver usuários" data-action="view-users" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👥</button>
+                        <button class="item-action" title="Criar usuário admin" data-action="create-admin" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👤</button>
+                        <button class="item-action" title="Módulos" data-action="view-modules" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">🧩</button>
+                        <button class="item-action" title="Faturamento" data-action="view-invoices" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">💰</button>
+                        <button class="item-action" title="Editar" data-action="edit" data-id="${company.id}">✏️</button>
+                        <button class="item-action" title="${company.is_active ? 'Desativar' : 'Ativar'}" data-action="toggle-active" data-id="${company.id}" data-active="${company.is_active}">${company.is_active ? '⛔' : '✅'}</button>
+                        <button class="item-action" title="Deletar" data-action="delete" data-id="${company.id}">🗑️</button>
                     </div>
-                </div>
-                <div class="item-actions">
-                    <button class="item-action" title="Ver usuários" data-action="view-users" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👥</button>
-                    <button class="item-action" title="Criar usuário admin" data-action="create-admin" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👤</button>
-                    <button class="item-action" title="Módulos" data-action="view-modules" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">🧩</button>
-                    <button class="item-action" title="Faturamento" data-action="view-invoices" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">💰</button>
-                    <button class="item-action" title="Editar" data-action="edit" data-id="${company.id}">✏️</button>
-                    <button class="item-action" title="${company.is_active ? 'Desativar' : 'Ativar'}" data-action="toggle-active" data-id="${company.id}" data-active="${company.is_active}">${company.is_active ? '⛔' : '✅'}</button>
-                    <button class="item-action" title="Deletar" data-action="delete" data-id="${company.id}">🗑️</button>
-                </div>
-            </div>
+                </td>
+            </tr>
         `;
     },
 
-    async search() {
-        try {
-            const query = document.getElementById('search-input').value.trim().toLowerCase();
-            if (!query) {
-                await this.loadCompanies();
-                return;
-            }
+    renderPagination(pagination) {
+        const el = document.getElementById('companies-pagination');
+        if (!el) return;
 
-            const result = await AdminAPI.getCompanies(1, 100);
-            const filtered = (result.items || []).filter(c =>
-                c.name.toLowerCase().includes(query) ||
-                (c.document || '').toLowerCase().includes(query)
-            );
-
-            const container = document.getElementById('companies-list');
-            const countEl = document.getElementById('company-count');
-
-            if (countEl) {
-                countEl.textContent = `${filtered.length} resultado${filtered.length !== 1 ? 's' : ''}`;
-            }
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🔍</div>
-                        <div class="empty-state-title">Nenhum resultado</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filtered.map(company => this.renderCompanyRow(company)).join('');
-        } catch (error) {
-            console.error('Search error:', error);
+        if (pagination.pages <= 1) {
+            el.innerHTML = '';
+            return;
         }
+
+        el.innerHTML = `
+            <button class="btn btn-outline btn-sm" data-page="${pagination.page - 1}" ${!pagination.hasPrev ? 'disabled' : ''}>‹ Anterior</button>
+            <span style="color: var(--text-secondary);">Página ${pagination.page} de ${pagination.pages}</span>
+            <button class="btn btn-outline btn-sm" data-page="${pagination.page + 1}" ${!pagination.hasNext ? 'disabled' : ''}>Próxima ›</button>
+        `;
+    },
+
+    goToPage(page) {
+        if (page < 1) return;
+        this.currentPage = page;
+        this.loadCompanies();
+    },
+
+    search() {
+        clearTimeout(this.searchDebounceTimer);
+        this.searchDebounceTimer = setTimeout(() => {
+            this.searchQuery = document.getElementById('search-input').value.trim();
+            this.currentPage = 1;
+            this.loadCompanies();
+        }, 300);
     },
 
     openCreateModal() {
@@ -294,7 +318,7 @@ const Companies = {
             }
 
             this.closeModal();
-            await this.loadCompanies();
+            await Promise.all([this.loadCompanies(), this.loadStats()]);
         } catch (error) {
             console.error('Error saving company:', error);
             alert(error.message || 'Erro ao salvar empresa');
@@ -309,7 +333,7 @@ const Companies = {
 
         try {
             await AdminAPI.updateCompany(id, { is_active: !currentlyActive });
-            await this.loadCompanies();
+            await Promise.all([this.loadCompanies(), this.loadStats()]);
         } catch (error) {
             console.error('Error toggling company status:', error);
             alert('Erro ao alterar status da empresa');
@@ -326,7 +350,7 @@ const Companies = {
         try {
             await AdminAPI.deleteCompany(id);
             alert('Empresa deletada com sucesso!');
-            await this.loadCompanies();
+            await Promise.all([this.loadCompanies(), this.loadStats()]);
         } catch (error) {
             console.error('Error deleting company:', error);
             alert(error.message || 'Erro ao deletar empresa');

@@ -39,13 +39,38 @@
                 </div>
             </header>
 
+            <!-- KPIs -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon knowledge">🏢</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-total">-</div>
+                        <div class="stat-label">Total de Empresas</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon published">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-active">-</div>
+                        <div class="stat-label">Ativas</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon draft">⛔</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stat-inactive">-</div>
+                        <div class="stat-label">Inativas</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Filter Bar -->
             <div class="card" style="margin-bottom: 2rem;">
                 <div class="card-body">
                     <div class="form-row">
                         <div class="form-group">
                             <input type="text" class="form-control" id="search-input"
-                                   placeholder="🔍 Buscar empresas por nome ou documento...">
+                                   placeholder="🔍 Buscar por nome, razão social ou CNPJ...">
                         </div>
                     </div>
                 </div>
@@ -58,9 +83,25 @@
                     <span id="company-count" style="color: var(--text-secondary);">0 empresas</span>
                 </div>
                 <div class="card-body">
-                    <div id="companies-list" class="items-list">
-                        <div class="loading">Carregando empresas...</div>
+                    <div class="table-responsive" style="overflow-x:auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Razão Social</th>
+                                    <th>CNPJ</th>
+                                    <th>Cidade/UF</th>
+                                    <th>Mensalidade</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="companies-table-body">
+                                <tr><td colspan="7"><div class="loading">Carregando empresas...</div></td></tr>
+                            </tbody>
+                        </table>
                     </div>
+                    <div id="companies-pagination" style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:1.5rem;"></div>
                 </div>
             </div>
         </main>

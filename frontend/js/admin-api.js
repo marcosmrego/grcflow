@@ -48,8 +48,13 @@ const AdminAPI = {
     },
 
     // Companies
-    async getCompanies(page = 1, limit = 50) {
-        return this.request(`/companies?page=${page}&limit=${limit}`);
+    async getCompanies(page = 1, limit = 50, search = '') {
+        const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+        return this.request(`/companies?page=${page}&limit=${limit}${searchParam}`);
+    },
+
+    async getCompanyStats() {
+        return this.request('/companies/stats');
     },
 
     async getCompany(id) {

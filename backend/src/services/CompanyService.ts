@@ -70,8 +70,12 @@ export class CompanyService {
     return company;
   }
 
-  async listCompanies(limit: number = 20, offset: number = 0): Promise<{ companies: Company[]; total: number }> {
-    return companyRepository.list(limit, offset);
+  async listCompanies(limit: number = 20, offset: number = 0, search?: string): Promise<{ companies: Company[]; total: number }> {
+    return companyRepository.list(limit, offset, search);
+  }
+
+  async getStats(): Promise<{ total: number; active: number; inactive: number }> {
+    return companyRepository.getStats();
   }
 
   async updateCompany(
