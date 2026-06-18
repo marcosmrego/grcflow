@@ -106,16 +106,26 @@ const Users = {
         }
     },
 
+    approvalGroupLabel(group) {
+        switch (group) {
+            case 'technical': return '1ª Alçada — Técnica';
+            case 'compliance': return '2ª Alçada — Compliance';
+            case 'final': return '3ª Alçada — Gestor Final';
+            default: return null;
+        }
+    },
+
     renderUserRow(user) {
         const statusBadge = user.is_active
             ? '<span class="badge badge-primary">✅ Ativo</span>'
             : '<span class="badge" style="background: var(--danger);">⛔ Inativo</span>';
+        const approvalGroupLabel = this.approvalGroupLabel(user.approvalGroup);
 
         return `
             <div class="item-row">
                 <div class="item-info">
                     <div class="item-title">👤 ${this.escapeHtml(user.name)}</div>
-                    <div class="item-description">${this.escapeHtml(user.email)} · ${this.roleLabel(user.role)}</div>
+                    <div class="item-description">${this.escapeHtml(user.email)} · ${this.roleLabel(user.role)}${approvalGroupLabel ? ` · ${approvalGroupLabel}` : ''}</div>
                     <div class="item-meta">
                         <span>📅 ${API.formatDate(user.created_at)}</span>
                         <span>${statusBadge}</span>
@@ -170,6 +180,7 @@ const Users = {
         document.getElementById('user-email').required = true;
         document.getElementById('user-password-group').style.display = 'block';
         document.getElementById('user-active-group').style.display = 'none';
+        document.getElementById('user-approval-group').value = '';
         this.toggleModal('user-modal', true);
     },
 
@@ -184,6 +195,7 @@ const Users = {
         document.getElementById('user-email').value = user.email;
         document.getElementById('user-role').value = user.role;
         document.getElementById('user-active').value = String(user.is_active);
+        document.getElementById('user-approval-group').value = user.approvalGroup || '';
 
         // Email and password cannot be changed via this form (backend only supports name/role/is_active)
         document.getElementById('user-email-group').style.display = 'none';
@@ -198,6 +210,7 @@ const Users = {
         try {
             const name = document.getElementById('user-name').value.trim();
             const role = document.getElementById('user-role').value;
+            const approvalGroup = document.getElementById('user-approval-group').value || null;
 
             if (!name) {
                 alert('Digite o nome do usuário');
@@ -208,7 +221,8 @@ const Users = {
                 const data = {
                     name,
                     role,
-                    is_active: document.getElementById('user-active').value === 'true'
+                    is_active: document.getElementById('user-active').value === 'true',
+                    approvalGroup
                 };
                 await API.updateUser(this.editingId, data);
                 alert('Usuário atualizado com sucesso!');
@@ -221,7 +235,7 @@ const Users = {
                     return;
                 }
 
-                const data = { email, name, role };
+                const data = { email, name, role, approvalGroup };
                 if (password) data.password = password;
 
                 await API.createUser(data);

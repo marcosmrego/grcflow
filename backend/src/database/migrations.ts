@@ -385,6 +385,43 @@ const migrations = [
     UNIQUE (knowledge_item_id, milestone_days)
   );
   `,
+
+  // Grupo de alçada de aprovação do usuário (RF004): define qual nível do workflow de
+  // 3 alçadas (técnico/compliance/gestor final) o usuário está autorizado a decidir.
+  // Combinado com Thiago em 17/06/2026 — hoje qualquer editor aprova qualquer alçada.
+  `
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS approval_group VARCHAR(20)
+    CHECK (approval_group IN ('technical','compliance','final'));
+  `,
+
+  // Cadastro de torres/departamentos — combinado com Thiago em 17/06/2026: a sigla do
+  // documento passa a ser atrelada a uma torre cadastrada, em vez de digitada livremente.
+  `
+  CREATE TABLE IF NOT EXISTS towers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    abbreviation VARCHAR(20) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    UNIQUE (company_id, abbreviation)
+  );
+  CREATE INDEX IF NOT EXISTS idx_towers_company_id ON towers(company_id);
+
+  -- Contador isolado por torre + tipo de documento: garante numeração sequencial que
+  -- nunca é reaproveitada, mesmo se o documento for excluído ou obsoletado.
+  CREATE TABLE IF NOT EXISTS tower_document_counters (
+    tower_id UUID NOT NULL REFERENCES towers(id) ON DELETE CASCADE,
+    doc_type VARCHAR(10) NOT NULL,
+    next_number INT NOT NULL DEFAULT 1,
+    PRIMARY KEY (tower_id, doc_type)
+  );
+
+  ALTER TABLE knowledge_items ADD COLUMN IF NOT EXISTS tower_id UUID REFERENCES towers(id) ON DELETE SET NULL;
+  CREATE INDEX IF NOT EXISTS idx_knowledge_tower_id ON knowledge_items(tower_id);
+  `,
 ];
 
 export async function runMigrations() {

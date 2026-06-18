@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import { knowledgeService } from '../services/KnowledgeService';
 import { userRepository } from '../repositories/UserRepository';
 import { validationResult, body, query, param } from 'express-validator';
-import { authMiddleware, requireAuth, AuthenticationError } from '../middleware';
+import { authMiddleware, requireAuth, requirePermission, AuthenticationError } from '../middleware';
 
 const router = express.Router();
 
@@ -56,7 +56,7 @@ router.get(
       if (!req.user) throw new AuthenticationError('User not authenticated');
       const limit = (req.query.limit as any) || 50;
       const offset = (req.query.offset as any) || 0;
-      const items = await knowledgeService.listItems(req.user.companyId, limit, offset);
+      const items = await knowledgeService.listItems(req.user.companyId, limit, offset, req.user.role);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch knowledge items' });
@@ -79,7 +79,7 @@ router.get(
       const { category } = req.params;
       const limit = (req.query.limit as any) || 20;
       const offset = (req.query.offset as any) || 0;
-      const items = await knowledgeService.getByCategory(req.user.companyId, category, limit, offset);
+      const items = await knowledgeService.getByCategory(req.user.companyId, category, limit, offset, req.user.role);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch items by category' });
@@ -96,7 +96,7 @@ router.get(
     try {
       if (!req.user) throw new AuthenticationError('User not authenticated');
       const { tag } = req.params;
-      const items = await knowledgeService.getByTag(req.user.companyId, tag);
+      const items = await knowledgeService.getByTag(req.user.companyId, tag, req.user.role);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch items by tag' });
@@ -113,7 +113,7 @@ router.get(
     try {
       if (!req.user) throw new AuthenticationError('User not authenticated');
       const { q } = req.query;
-      const items = await knowledgeService.searchItems(req.user.companyId, q as string);
+      const items = await knowledgeService.searchItems(req.user.companyId, q as string, req.user.role);
       res.json(items);
     } catch (error) {
       res.status(500).json({ error: 'Failed to search knowledge items' });
@@ -130,7 +130,7 @@ router.get(
     try {
       if (!req.user) throw new AuthenticationError('User not authenticated');
       const { id } = req.params;
-      const item = await knowledgeService.getItem(id, req.user.companyId);
+      const item = await knowledgeService.getItem(id, req.user.companyId, req.user.role);
       if (!item) {
         return res.status(404).json({ error: 'Knowledge item not found' });
       }
@@ -178,6 +178,7 @@ router.get(
 // POST - Criar novo item de conhecimento
 router.post(
   '/',
+  requirePermission('CREATE_KNOWLEDGE'),
   [
     body('category').notEmpty().isString(),
     body('title').notEmpty().isString(),
@@ -185,7 +186,7 @@ router.post(
     body('content').notEmpty().isString(),
     body('tags').optional().isArray(),
     body('docType').optional().isIn(DOC_TYPES),
-    body('documentCode').optional().isString(),
+    body('towerId').optional({ nullable: true }).isUUID(),
     body('categoryId').optional().isUUID(),
     body('confidentiality').optional().isIn(CONFIDENTIALITY_LEVELS),
     body('validityDays').optional().isInt({ min: 1 }).toInt(),
@@ -194,7 +195,7 @@ router.post(
   async (req: Request, res: Response, next: Function) => {
     try {
       if (!req.user) throw new AuthenticationError('User not authenticated');
-      const { category, title, description, content, tags, docType, documentCode, categoryId, confidentiality, validityDays } = req.body;
+      const { category, title, description, content, tags, docType, towerId, categoryId, confidentiality, validityDays } = req.body;
       const item = await knowledgeService.createItem(
         {
           companyId: req.user.companyId,
@@ -205,7 +206,7 @@ router.post(
           content,
           tags: tags || [],
           docType: docType || 'ARTICLE',
-          documentCode: documentCode || null,
+          towerId: towerId || null,
           confidentiality: confidentiality || 'interno',
           validityDays: validityDays || 365,
         },
@@ -221,6 +222,7 @@ router.post(
 // PUT - Atualizar item de conhecimento
 router.put(
   '/:id',
+  requirePermission('UPDATE_KNOWLEDGE'),
   [
     param('id').isUUID(),
     body('category').optional().isString(),
@@ -228,7 +230,6 @@ router.put(
     body('description').optional().isString(),
     body('content').optional().isString(),
     body('tags').optional().isArray(),
-    body('documentCode').optional().isString(),
     body('categoryId').optional().isUUID(),
     body('confidentiality').optional().isIn(CONFIDENTIALITY_LEVELS),
     body('validityDays').optional().isInt({ min: 1 }).toInt(),
@@ -258,6 +259,7 @@ router.put(
 // POST - Restaurar uma versão anterior (RF-03)
 router.post(
   '/:id/restore/:versionNumber',
+  requirePermission('UPDATE_KNOWLEDGE'),
   [param('id').isUUID(), param('versionNumber').isInt({ min: 1 }).toInt()],
   handleValidationErrors,
   async (req: Request, res: Response, next: Function) => {
@@ -275,6 +277,7 @@ router.post(
 // POST - Enviar item para o workflow de aprovação em 3 alçadas (RF004)
 router.post(
   '/:id/submit',
+  requirePermission('UPDATE_KNOWLEDGE'),
   [param('id').isUUID()],
   handleValidationErrors,
   async (req: Request, res: Response, next: Function) => {
@@ -292,6 +295,7 @@ router.post(
 // POST - Aprovar alçada (RF004)
 router.post(
   '/:id/approve',
+  requirePermission('UPDATE_KNOWLEDGE'),
   [param('id').isUUID(), body('level').isInt({ min: 1, max: 3 }).toInt()],
   handleValidationErrors,
   async (req: Request, res: Response, next: Function) => {
@@ -310,6 +314,7 @@ router.post(
 // POST - Reprovar alçada (RF004) — exige justificativa
 router.post(
   '/:id/reject',
+  requirePermission('UPDATE_KNOWLEDGE'),
   [param('id').isUUID(), body('level').isInt({ min: 1, max: 3 }).toInt(), body('justification').notEmpty().isString()],
   handleValidationErrors,
   async (req: Request, res: Response, next: Function) => {
@@ -328,6 +333,7 @@ router.post(
 // DELETE - Deletar item de conhecimento
 router.delete(
   '/:id',
+  requirePermission('DELETE_KNOWLEDGE'),
   [param('id').isUUID()],
   handleValidationErrors,
   async (req: Request, res: Response) => {

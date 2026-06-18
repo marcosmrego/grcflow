@@ -149,10 +149,13 @@ const API = {
         const el = document.getElementById('user-info');
         if (el && user) el.textContent = user.name || user.email;
 
+        const isAdmin = !!(user && user.role === 'admin');
+
         const usersNavItem = document.getElementById('nav-users-item');
-        if (usersNavItem) {
-            usersNavItem.style.display = (user && user.role === 'admin') ? '' : 'none';
-        }
+        if (usersNavItem) usersNavItem.style.display = isAdmin ? '' : 'none';
+
+        const towersNavItem = document.getElementById('nav-towers-item');
+        if (towersNavItem) towersNavItem.style.display = isAdmin ? '' : 'none';
     },
 
     // Health Check
@@ -308,6 +311,31 @@ const API = {
 
     async deleteFlowStep(flowId, stepId) {
         return this.request(`/flows/${flowId}/steps/${stepId}`, { method: 'DELETE' });
+    },
+
+    // Towers/Departments (read for any role, mutations admin only)
+    async getTowers() {
+        return this.request('/towers');
+    },
+
+    async createTower(data) {
+        return this.request('/towers', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async updateTower(id, data) {
+        return this.request(`/towers/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async deleteTower(id) {
+        return this.request(`/towers/${id}`, {
+            method: 'DELETE'
+        });
     },
 
     // Company Users (admin only — scoped to the authenticated user's company)

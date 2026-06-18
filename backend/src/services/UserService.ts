@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AuthService } from './AuthService';
 import { userRepository } from '../repositories/UserRepository';
 import { companyRepository } from '../repositories/CompanyRepository';
-import { User, AuthTokens, UserPayload } from '../models/types';
+import { User, AuthTokens, UserPayload, ApprovalGroup } from '../models/types';
 import { ValidationError, AuthenticationError, ConflictError, NotFoundError } from '../middleware';
 
 interface LoginRequest {
@@ -233,7 +233,7 @@ export class UserService {
    * Get all users of a company (admin only)
    */
   async listUsers(companyId: string, limit: number = 20, offset: number = 0): Promise<{
-    users: Array<UserPayload & { is_active: boolean; created_at: Date }>;
+    users: Array<UserPayload & { is_active: boolean; created_at: Date; approvalGroup: ApprovalGroup | null }>;
     total: number;
   }> {
     const { users, total } = await userRepository.listByCompany(companyId, limit, offset);
@@ -243,6 +243,7 @@ export class UserService {
         ...AuthService.toUserPayload(user),
         is_active: user.is_active,
         created_at: user.created_at,
+        approvalGroup: user.approval_group ?? null,
       })),
       total,
     };
@@ -256,7 +257,8 @@ export class UserService {
     name: string;
     role: 'admin' | 'editor' | 'viewer';
     password?: string;
-  }): Promise<UserPayload> {
+    approvalGroup?: ApprovalGroup | null;
+  }): Promise<UserPayload & { approvalGroup: ApprovalGroup | null }> {
     // Validate
     if (!data.email || !data.name) {
       throw new ValidationError('Email and name are required');
@@ -280,10 +282,11 @@ export class UserService {
       name: data.name.trim(),
       password_hash: passwordHash,
       role: data.role,
+      approval_group: data.approvalGroup ?? null,
       is_active: true,
     });
 
-    return AuthService.toUserPayload(user);
+    return { ...AuthService.toUserPayload(user), approvalGroup: user.approval_group ?? null };
   }
 
   /**
@@ -293,7 +296,8 @@ export class UserService {
     name?: string;
     role?: 'admin' | 'editor' | 'viewer';
     is_active?: boolean;
-  }): Promise<UserPayload> {
+    approvalGroup?: ApprovalGroup | null;
+  }): Promise<UserPayload & { approvalGroup: ApprovalGroup | null }> {
     const existing = await userRepository.findByIdInCompany(userId, companyId);
     if (!existing) {
       throw new AuthenticationError('User not found');
@@ -303,13 +307,14 @@ export class UserService {
       name: updates.name?.trim(),
       role: updates.role,
       is_active: updates.is_active,
+      approval_group: updates.approvalGroup,
     });
 
     if (!user) {
       throw new AuthenticationError('User not found');
     }
 
-    return AuthService.toUserPayload(user);
+    return { ...AuthService.toUserPayload(user), approvalGroup: user.approval_group ?? null };
   }
 
   /**

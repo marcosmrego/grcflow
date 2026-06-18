@@ -1,13 +1,13 @@
 import { db } from '../config/database';
 import {
   ApprovalDecision,
-  DocType,
   KnowledgeItem,
   KnowledgeItemApproval,
   KnowledgeItemVersion,
   KnowledgeStats,
 } from '../models/types';
-import { ConflictError } from '../middleware/errorHandler';
+import { ConflictError, ValidationError } from '../middleware/errorHandler';
+import { towerRepository } from './TowerRepository';
 import { v4 as uuidv4 } from 'uuid';
 
 // Papel do validador em cada nível da alçada de aprovação (RF004)
@@ -17,25 +17,14 @@ export const APPROVAL_LEVELS: { level: 1 | 2 | 3; approverRole: string }[] = [
   { level: 3, approverRole: 'final' },
 ];
 
-// Máscara de nomenclatura por tipo de documento (RF002).
-// Padrão:  SIGLA_AREA_CLIENTE_NUM            ex: POP_GRC_ALFA_001
-// Modular: SIGLA_AREA_CLIENTE_AREA_DEST_NUM  ex: FLU_ITO_XYZ_SDK_001
-const DOCUMENT_CODE_PATTERN = /^([A-Z]+)(_[A-Z0-9]+){2,3}_\d{3,}$/;
+// Status que o perfil visualizador não pode ver: documentos ainda não aprovados
+// (apenas ADM e editor acompanham o documento em revisão/aprovação).
+const VIEWER_HIDDEN_STATUSES = ['draft', 'in_review', 'pending_approval'];
+const VIEWER_STATUS_FILTER = `AND status NOT IN ('${VIEWER_HIDDEN_STATUSES.join("','")}')`;
 
 export class KnowledgeRepository {
-  /**
-   * Valida o código identificador conforme a máscara obrigatória (RF002).
-   * Documentos do tipo ARTICLE não exigem código.
-   */
-  validateDocumentCode(docType: DocType, documentCode?: string | null): boolean {
-    if (docType === 'ARTICLE') return true;
-    if (!documentCode) return false;
-    if (!documentCode.startsWith(`${docType}_`)) return false;
-    return DOCUMENT_CODE_PATTERN.test(documentCode);
-  }
-
   async create(
-    item: Omit<KnowledgeItem, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'approvedAt' | 'expiresAt'> & {
+    item: Omit<KnowledgeItem, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'approvedAt' | 'expiresAt' | 'documentCode'> & {
       status?: KnowledgeItem['status'];
     },
     author: { id: string; name: string; email: string }
@@ -48,13 +37,29 @@ export class KnowledgeRepository {
       const now = new Date();
       const status = item.status || 'draft';
 
+      // RF002: código gerado automaticamente a partir da torre/departamento (combinado
+      // com Thiago em 17/06/2026) — documentos do tipo ARTICLE não exigem código.
+      let documentCode: string | null = null;
+      if (item.docType !== 'ARTICLE') {
+        if (!item.towerId) {
+          throw new ValidationError('Selecione uma torre/departamento para gerar o código do documento.', {
+            field: 'towerId',
+          });
+        }
+        const tower = await towerRepository.findById(item.towerId, item.companyId);
+        if (!tower) throw new ValidationError('Torre/departamento não encontrada.', { field: 'towerId' });
+
+        const number = await towerRepository.assignNextNumber(client, tower.id, item.docType);
+        documentCode = `${item.docType}_${tower.abbreviation}_${String(number).padStart(3, '0')}`;
+      }
+
       const insertResult = await client.query(
         `
         INSERT INTO knowledge_items (
           id, company_id, category, category_id, title, description, content, tags,
-          doc_type, document_code, confidentiality, validity_days, status, created_at, updated_at
+          doc_type, document_code, tower_id, confidentiality, validity_days, status, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *;
         `,
         [
@@ -67,7 +72,8 @@ export class KnowledgeRepository {
           item.content,
           JSON.stringify(item.tags),
           item.docType,
-          item.documentCode || null,
+          documentCode,
+          item.towerId || null,
           item.confidentiality,
           item.validityDays,
           status,
@@ -114,10 +120,17 @@ export class KnowledgeRepository {
     return result.rows.length > 0 ? this.mapRow(result.rows[0]) : null;
   }
 
-  async findByCategory(companyId: string, category: string, limit = 20, offset = 0): Promise<KnowledgeItem[]> {
+  async findByCategory(
+    companyId: string,
+    category: string,
+    limit = 20,
+    offset = 0,
+    restrictToVisible = false
+  ): Promise<KnowledgeItem[]> {
     const query = `
       SELECT * FROM knowledge_items
       WHERE company_id = $1 AND category = $2 AND deleted_at IS NULL
+      ${restrictToVisible ? VIEWER_STATUS_FILTER : ''}
       ORDER BY created_at DESC
       LIMIT $3 OFFSET $4;
     `;
@@ -125,23 +138,25 @@ export class KnowledgeRepository {
     return result.rows.map(row => this.mapRow(row));
   }
 
-  async findByTag(companyId: string, tag: string): Promise<KnowledgeItem[]> {
+  async findByTag(companyId: string, tag: string, restrictToVisible = false): Promise<KnowledgeItem[]> {
     const query = `
       SELECT * FROM knowledge_items
       WHERE company_id = $1 AND tags @> $2 AND deleted_at IS NULL
+      ${restrictToVisible ? VIEWER_STATUS_FILTER : ''}
       ORDER BY created_at DESC;
     `;
     const result = await db.query(query, [companyId, JSON.stringify([tag])]);
     return result.rows.map(row => this.mapRow(row));
   }
 
-  async search(companyId: string, query: string): Promise<KnowledgeItem[]> {
+  async search(companyId: string, query: string, restrictToVisible = false): Promise<KnowledgeItem[]> {
     const searchQuery = `
       SELECT * FROM knowledge_items
       WHERE company_id = $1
             AND deleted_at IS NULL
             AND to_tsvector('portuguese', title || ' ' || description || ' ' || content)
                 @@ plainto_tsquery('portuguese', $2)
+            ${restrictToVisible ? VIEWER_STATUS_FILTER : ''}
       ORDER BY created_at DESC;
     `;
     const result = await db.query(searchQuery, [companyId, query]);
@@ -157,7 +172,7 @@ export class KnowledgeRepository {
     updates: Partial<
       Pick<
         KnowledgeItem,
-        'title' | 'description' | 'content' | 'tags' | 'category' | 'categoryId' | 'documentCode' | 'confidentiality' | 'validityDays' | 'status'
+        'title' | 'description' | 'content' | 'tags' | 'category' | 'categoryId' | 'confidentiality' | 'validityDays' | 'status'
       >
     >,
     author: { id: string; name: string; email: string },
@@ -203,11 +218,10 @@ export class KnowledgeRepository {
             tags = COALESCE($6, tags),
             category = COALESCE($7, category),
             category_id = COALESCE($8, category_id),
-            document_code = COALESCE($9, document_code),
-            confidentiality = COALESCE($10, confidentiality),
-            validity_days = COALESCE($11, validity_days),
-            status = $12,
-            updated_at = $13
+            confidentiality = COALESCE($9, confidentiality),
+            validity_days = COALESCE($10, validity_days),
+            status = $11,
+            updated_at = $12
         WHERE id = $1 AND company_id = $2
         RETURNING *;
         `,
@@ -220,7 +234,6 @@ export class KnowledgeRepository {
           updates.tags ? JSON.stringify(updates.tags) : null,
           updates.category,
           updates.categoryId,
-          updates.documentCode,
           updates.confidentiality,
           updates.validityDays,
           nextStatus,
@@ -295,10 +308,11 @@ export class KnowledgeRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async list(companyId: string, limit = 50, offset = 0): Promise<KnowledgeItem[]> {
+  async list(companyId: string, limit = 50, offset = 0, restrictToVisible = false): Promise<KnowledgeItem[]> {
     const query = `
       SELECT * FROM knowledge_items
       WHERE company_id = $1 AND deleted_at IS NULL
+      ${restrictToVisible ? VIEWER_STATUS_FILTER : ''}
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -528,6 +542,7 @@ export class KnowledgeRepository {
       tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
       docType: row.doc_type,
       documentCode: row.document_code,
+      towerId: row.tower_id,
       confidentiality: row.confidentiality,
       status: row.status,
       validityDays: row.validity_days,

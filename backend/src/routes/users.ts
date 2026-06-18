@@ -111,6 +111,10 @@ router.post(
       .optional()
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters long'),
+    body('approvalGroup')
+      .optional({ nullable: true })
+      .isIn(['technical', 'compliance', 'final'])
+      .withMessage('Approval group must be technical, compliance, or final'),
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
@@ -123,6 +127,7 @@ router.post(
       name: req.body.name,
       role: req.body.role,
       password: req.body.password,
+      approvalGroup: req.body.approvalGroup || null,
     });
 
     const response: ApiResponse<any> = {
@@ -159,6 +164,10 @@ router.put(
       .optional()
       .isBoolean()
       .withMessage('is_active must be a boolean'),
+    body('approvalGroup')
+      .optional({ nullable: true })
+      .isIn(['technical', 'compliance', 'final'])
+      .withMessage('Approval group must be technical, compliance, or final'),
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
@@ -170,6 +179,7 @@ router.put(
       name: req.body.name,
       role: req.body.role,
       is_active: req.body.is_active,
+      approvalGroup: req.body.approvalGroup === undefined ? undefined : (req.body.approvalGroup || null),
     });
 
     const response: ApiResponse<any> = {

@@ -57,10 +57,10 @@ export class UserRepository {
   async create(user: Omit<User, 'created_at' | 'updated_at' | 'deleted_at'>): Promise<User> {
     const result = await db.query(
       `INSERT INTO users (
-        id, company_id, email, name, password_hash, role, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        id, company_id, email, name, password_hash, role, approval_group, is_active
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [user.id, user.company_id, user.email, user.name, user.password_hash, user.role, user.is_active ?? true]
+      [user.id, user.company_id, user.email, user.name, user.password_hash, user.role, user.approval_group ?? null, user.is_active ?? true]
     );
     return result.rows[0];
   }
@@ -85,6 +85,10 @@ export class UserRepository {
     if (updates.role !== undefined) {
       fields.push(`role = $${paramCount++}`);
       values.push(updates.role);
+    }
+    if (updates.approval_group !== undefined) {
+      fields.push(`approval_group = $${paramCount++}`);
+      values.push(updates.approval_group);
     }
     if (updates.password_hash !== undefined) {
       fields.push(`password_hash = $${paramCount++}`);

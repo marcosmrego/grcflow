@@ -43,12 +43,44 @@ const Knowledge = {
     currentItem: null,
     editingId: null,
     quill: null,
+    towers: [],
 
     async init() {
         this.initEditor();
+        this.applyRolePermissions();
+        await this.loadTowers();
         await this.loadStats();
         await this.loadItems();
         this.setupEventListeners();
+    },
+
+    async loadTowers() {
+        try {
+            this.towers = await API.getTowers();
+            const select = document.getElementById('kb-tower');
+            if (select) {
+                select.innerHTML = '<option value="">Selecione uma torre</option>' +
+                    this.towers.map(t => `<option value="${t.id}">${this.escapeHtml(t.name)} (${this.escapeHtml(t.abbreviation)})</option>`).join('');
+            }
+        } catch (error) {
+            console.error('Error loading towers:', error);
+        }
+    },
+
+    towerLabel(towerId) {
+        const tower = this.towers.find(t => t.id === towerId);
+        return tower ? `${tower.name} (${tower.abbreviation})` : null;
+    },
+
+    /** Visualizador só consulta: sem criar, editar ou excluir itens. */
+    canEdit() {
+        const user = API.getUser();
+        return !!user && user.role !== 'viewer';
+    },
+
+    applyRolePermissions() {
+        const newItemBtn = document.getElementById('btn-new-item');
+        if (newItemBtn && !this.canEdit()) newItemBtn.style.display = 'none';
     },
 
     initEditor() {
@@ -218,18 +250,18 @@ const Knowledge = {
                     <div class="empty-state-icon">📚</div>
                     <div class="empty-state-title">Nenhum item de conhecimento</div>
                     <p class="empty-state-text">Comece adicionando itens à sua base de conhecimento</p>
-                    <button class="btn btn-primary" data-action="create">
-                        + Criar Primeiro Item
-                    </button>
+                    ${this.canEdit() ? `<button class="btn btn-primary" data-action="create">+ Criar Primeiro Item</button>` : ''}
                 </div>
             `;
             return;
         }
 
+        const canEdit = this.canEdit();
+
         container.innerHTML = items.map(item => `
             <div class="item-row">
                 <div class="item-info">
-                    <div class="item-title">
+                    <div class="item-title" style="cursor:pointer" title="Ver detalhes" data-action="view" data-id="${item.id}">
                         ${this.escapeHtml(item.title)}
                         <span class="status-badge status-${item.status}">${STATUS_LABELS[item.status] || item.status}</span>
                     </div>
@@ -237,6 +269,7 @@ const Knowledge = {
                     <div class="item-meta">
                         <span>📂 ${this.escapeHtml(item.category)}</span>
                         <span>📄 ${DOC_TYPE_LABELS[item.docType] || item.docType}${item.documentCode ? ` — ${this.escapeHtml(item.documentCode)}` : ''}</span>
+                        ${this.towerLabel(item.towerId) ? `<span>🏢 ${this.escapeHtml(this.towerLabel(item.towerId))}</span>` : ''}
                         <span>📅 ${API.formatDateShort(item.createdAt)}</span>
                         ${item.expiresAt ? `<span>⏳ Válido até ${API.formatDateShort(item.expiresAt)}</span>` : ''}
                     </div>
@@ -246,8 +279,8 @@ const Knowledge = {
                 </div>
                 <div class="item-actions">
                     <button class="item-action" title="Ver detalhes" data-action="view" data-id="${item.id}">👁️</button>
-                    <button class="item-action" title="Editar" data-action="edit" data-id="${item.id}">✏️</button>
-                    <button class="item-action" title="Deletar" data-action="delete" data-id="${item.id}">🗑️</button>
+                    ${canEdit ? `<button class="item-action" title="Editar" data-action="edit" data-id="${item.id}">✏️</button>` : ''}
+                    ${canEdit ? `<button class="item-action" title="Deletar" data-action="delete" data-id="${item.id}">🗑️</button>` : ''}
                 </div>
             </div>
         `).join('');
@@ -256,10 +289,10 @@ const Knowledge = {
     toggleDocumentCodeField() {
         const docType = document.getElementById('kb-doc-type').value;
         const group = document.getElementById('kb-document-code-group');
-        const input = document.getElementById('kb-document-code');
+        const select = document.getElementById('kb-tower');
         const isControlled = docType !== 'ARTICLE';
         group.style.display = isControlled ? '' : 'none';
-        if (!isControlled) input.value = '';
+        if (!isControlled) select.value = '';
     },
 
     openCreateModal() {
@@ -269,6 +302,8 @@ const Knowledge = {
         if (this.quill) this.quill.setText('');
         document.getElementById('kb-doc-type').disabled = false;
         document.getElementById('kb-doc-type').value = 'ARTICLE';
+        document.getElementById('kb-tower').disabled = false;
+        document.getElementById('kb-document-code-hint').textContent = 'O código do documento é gerado automaticamente (ex: POL_HD_001)';
         document.getElementById('kb-confidentiality').value = 'interno';
         document.getElementById('kb-validity-days').value = 365;
         document.getElementById('kb-change-reason-group').style.display = 'none';
@@ -289,7 +324,11 @@ const Knowledge = {
             document.getElementById('kb-tags').value = item.tags.join(', ');
             document.getElementById('kb-doc-type').value = item.docType;
             document.getElementById('kb-doc-type').disabled = true;
-            document.getElementById('kb-document-code').value = item.documentCode || '';
+            document.getElementById('kb-tower').value = item.towerId || '';
+            document.getElementById('kb-tower').disabled = true;
+            document.getElementById('kb-document-code-hint').textContent = item.documentCode
+                ? `Código gerado: ${item.documentCode} (torre não pode ser alterada após a criação)`
+                : 'Documento do tipo Artigo não usa código.';
             document.getElementById('kb-confidentiality').value = item.confidentiality;
             document.getElementById('kb-validity-days').value = item.validityDays;
             document.getElementById('kb-change-reason').value = '';
@@ -313,7 +352,7 @@ const Knowledge = {
             const tagsInput = document.getElementById('kb-tags').value;
             const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
             const docType = document.getElementById('kb-doc-type').value;
-            const documentCode = document.getElementById('kb-document-code').value.trim();
+            const towerId = document.getElementById('kb-tower').value;
             const confidentiality = document.getElementById('kb-confidentiality').value;
             const validityDays = parseInt(document.getElementById('kb-validity-days').value, 10) || 365;
             const changeReason = document.getElementById('kb-change-reason').value.trim();
@@ -323,8 +362,8 @@ const Knowledge = {
                 return;
             }
 
-            if (docType !== 'ARTICLE' && !documentCode) {
-                alert('Informe o código do documento para este tipo de documento.');
+            if (!this.editingId && docType !== 'ARTICLE' && !towerId) {
+                alert('Selecione a torre/departamento deste documento.');
                 return;
             }
 
@@ -335,8 +374,8 @@ const Knowledge = {
                 validityDays
             };
 
-            if (docType !== 'ARTICLE') {
-                data.documentCode = documentCode;
+            if (!this.editingId && docType !== 'ARTICLE') {
+                data.towerId = towerId;
             }
 
             if (this.editingId) {
@@ -367,10 +406,14 @@ const Knowledge = {
             await this.renderVersionsTab(item);
             await this.renderWorkflowTab(item);
 
+            const canEdit = this.canEdit();
+
             document.getElementById('delete-btn').onclick = () => this.deleteItem(id);
+            document.getElementById('delete-btn').style.display = canEdit ? '' : 'none';
+            document.getElementById('kb-view-modal-edit').style.display = canEdit ? '' : 'none';
 
             const submitBtn = document.getElementById('kb-submit-approval-btn');
-            if (item.status === 'draft' || item.status === 'in_review') {
+            if (canEdit && (item.status === 'draft' || item.status === 'in_review')) {
                 submitBtn.style.display = '';
             } else {
                 submitBtn.style.display = 'none';
@@ -402,6 +445,11 @@ const Knowledge = {
                         <label>Categoria</label>
                         <p>${this.escapeHtml(item.category)}</p>
                     </div>
+                    ${this.towerLabel(item.towerId) ? `
+                    <div class="form-group">
+                        <label>Torre/Departamento</label>
+                        <p>${this.escapeHtml(this.towerLabel(item.towerId))}</p>
+                    </div>` : ''}
                     <div class="form-group">
                         <label>Confidencialidade</label>
                         <p>${CONFIDENTIALITY_LABELS[item.confidentiality] || item.confidentiality}</p>
@@ -472,7 +520,7 @@ const Knowledge = {
                             </div>
                             <div>
                                 ${v.versionNumber !== latestVersion
-                                    ? `<button class="btn btn-outline btn-sm" data-restore="${v.versionNumber}">Restaurar</button>`
+                                    ? (this.canEdit() ? `<button class="btn btn-outline btn-sm" data-restore="${v.versionNumber}">Restaurar</button>` : '')
                                     : '<span class="badge badge-primary">Atual</span>'}
                             </div>
                         </div>
@@ -523,7 +571,7 @@ const Knowledge = {
                                 ${a.decidedAt ? `<span style="color:var(--text-secondary); font-size:0.85rem;">em ${API.formatDate(a.decidedAt)}</span>` : ''}
                                 ${a.justification ? `<span style="color:var(--text-secondary); font-size:0.85rem;">Justificativa: ${this.escapeHtml(a.justification)}</span>` : ''}
                             </div>
-                            ${nextPending && nextPending.level === a.level ? `
+                            ${this.canEdit() && nextPending && nextPending.level === a.level ? `
                                 <div style="display:flex; gap:0.5rem;">
                                     <button class="btn btn-success btn-sm" data-approve="${a.level}">Aprovar</button>
                                     <button class="btn btn-danger btn-sm" data-reject="${a.level}">Reprovar</button>

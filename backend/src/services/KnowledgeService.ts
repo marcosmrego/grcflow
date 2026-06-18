@@ -1,38 +1,37 @@
 import { knowledgeRepository, APPROVAL_LEVELS } from '../repositories/KnowledgeRepository';
-import { ApprovalDecision, KnowledgeItem, KnowledgeItemApproval, KnowledgeItemVersion, KnowledgeStats } from '../models/types';
-import { ConflictError, NotFoundError, ValidationError } from '../middleware/errorHandler';
+import { userRepository } from '../repositories/UserRepository';
+import { ApprovalDecision, KnowledgeItem, KnowledgeItemApproval, KnowledgeItemVersion, KnowledgeStats, UserRole } from '../models/types';
+import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../middleware/errorHandler';
 
 type Author = { id: string; name: string; email: string };
 
+// Documentos ainda não aprovados só são visíveis para quem participa do workflow (admin/editor).
+const VIEWER_HIDDEN_STATUSES: KnowledgeItem['status'][] = ['draft', 'in_review', 'pending_approval'];
+
 export class KnowledgeService {
   async createItem(
-    data: Omit<KnowledgeItem, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'approvedAt' | 'expiresAt'>,
+    data: Omit<KnowledgeItem, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'approvedAt' | 'expiresAt' | 'documentCode'>,
     author: Author
   ): Promise<KnowledgeItem> {
-    if (!knowledgeRepository.validateDocumentCode(data.docType, data.documentCode)) {
-      throw new ValidationError(
-        `Código identificador inválido para o tipo ${data.docType}. ` +
-          `Use o formato ${data.docType}_AREA_CLIENTE_NUM (ex: ${data.docType}_GRC_ALFA_001).`,
-        { field: 'documentCode' }
-      );
-    }
     return knowledgeRepository.create(data, author);
   }
 
-  async getItem(id: string, companyId: string): Promise<KnowledgeItem | null> {
-    return knowledgeRepository.findById(id, companyId);
+  async getItem(id: string, companyId: string, role?: UserRole): Promise<KnowledgeItem | null> {
+    const item = await knowledgeRepository.findById(id, companyId);
+    if (item && role === 'viewer' && VIEWER_HIDDEN_STATUSES.includes(item.status)) return null;
+    return item;
   }
 
-  async getByCategory(companyId: string, category: string, limit?: number, offset?: number): Promise<KnowledgeItem[]> {
-    return knowledgeRepository.findByCategory(companyId, category, limit, offset);
+  async getByCategory(companyId: string, category: string, limit?: number, offset?: number, role?: UserRole): Promise<KnowledgeItem[]> {
+    return knowledgeRepository.findByCategory(companyId, category, limit, offset, role === 'viewer');
   }
 
-  async searchItems(companyId: string, query: string): Promise<KnowledgeItem[]> {
-    return knowledgeRepository.search(companyId, query);
+  async searchItems(companyId: string, query: string, role?: UserRole): Promise<KnowledgeItem[]> {
+    return knowledgeRepository.search(companyId, query, role === 'viewer');
   }
 
-  async getByTag(companyId: string, tag: string): Promise<KnowledgeItem[]> {
-    return knowledgeRepository.findByTag(companyId, tag);
+  async getByTag(companyId: string, tag: string, role?: UserRole): Promise<KnowledgeItem[]> {
+    return knowledgeRepository.findByTag(companyId, tag, role === 'viewer');
   }
 
   async updateItem(
@@ -41,23 +40,12 @@ export class KnowledgeService {
     updates: Partial<
       Pick<
         KnowledgeItem,
-        'title' | 'description' | 'content' | 'tags' | 'category' | 'categoryId' | 'documentCode' | 'confidentiality' | 'validityDays'
+        'title' | 'description' | 'content' | 'tags' | 'category' | 'categoryId' | 'confidentiality' | 'validityDays'
       >
     >,
     author: Author,
     changeMeta?: { changeReason?: string; affectedSection?: string }
   ): Promise<KnowledgeItem | null> {
-    if (updates.documentCode !== undefined) {
-      const item = await knowledgeRepository.findById(id, companyId);
-      if (!item) return null;
-      if (!knowledgeRepository.validateDocumentCode(item.docType, updates.documentCode)) {
-        throw new ValidationError(
-          `Código identificador inválido para o tipo ${item.docType}. ` +
-            `Use o formato ${item.docType}_AREA_CLIENTE_NUM (ex: ${item.docType}_GRC_ALFA_001).`,
-          { field: 'documentCode' }
-        );
-      }
-    }
     return knowledgeRepository.update(id, companyId, updates, author, changeMeta);
   }
 
@@ -65,8 +53,8 @@ export class KnowledgeService {
     return knowledgeRepository.delete(id, companyId);
   }
 
-  async listItems(companyId: string, limit?: number, offset?: number): Promise<KnowledgeItem[]> {
-    return knowledgeRepository.list(companyId, limit, offset);
+  async listItems(companyId: string, limit?: number, offset?: number, role?: UserRole): Promise<KnowledgeItem[]> {
+    return knowledgeRepository.list(companyId, limit, offset, role === 'viewer');
   }
 
   async listVersions(id: string, companyId: string): Promise<KnowledgeItemVersion[]> {
@@ -132,6 +120,16 @@ export class KnowledgeService {
     if (!approval) throw new NotFoundError('Approval', `${id}@level${level}`);
     if (approval.status !== 'pending') {
       throw new ConflictError(`Alçada de nível ${level} já foi decidida.`);
+    }
+
+    // Só admin (acesso irrestrito) ou quem está no grupo de aprovação daquela alçada
+    // pode decidir essa etapa (RF004 — combinado com Thiago em 17/06/2026).
+    const decidingUser = await userRepository.findByIdInCompany(decidedBy, companyId);
+    if (!decidingUser) throw new NotFoundError('User', decidedBy);
+    if (decidingUser.role !== 'admin' && decidingUser.approval_group !== approval.approverRole) {
+      throw new AuthorizationError(
+        `Apenas usuários do grupo de aprovação "${approval.approverRole}" podem decidir esta alçada.`
+      );
     }
 
     // Garante que as alçadas anteriores já foram aprovadas (ordem sequencial)

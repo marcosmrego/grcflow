@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torres/Departamentos - GRC Flow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">⚙️</span>
+                    <span class="logo-text">GRC Flow</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="../index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="knowledge.html" class="nav-link">Base de Conhecimento</a></li>
+                <li><a href="flows.html" class="nav-link">Fluxos de Processos</a></li>
+                <li id="nav-users-item" style="display:none"><a href="users.html" class="nav-link">Usuários</a></li>
+                <li id="nav-towers-item" style="display:none"><a href="towers.html" class="nav-link active">Torres</a></li>
+                <li><a href="#" class="nav-link status-indicator">
+                    <span class="dot online"></span>
+                    <span id="api-status">Conectando...</span>
+                </a></li>
+                <li><a href="#" class="nav-link" id="system-info-btn" title="Informações do sistema">ℹ️</a></li>
+                <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
+                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1>🏢 Torres / Departamentos</h1>
+                    <p class="subtitle">Cadastro usado para gerar automaticamente o código dos documentos (ex: POP_HD_001)</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-new-tower">
+                        + Nova Torre
+                    </button>
+                </div>
+            </header>
+
+            <!-- Towers Container -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Torres Cadastradas</h2>
+                    <span id="tower-count" style="color: var(--text-secondary);">0 torres</span>
+                </div>
+                <div class="card-body">
+                    <div id="towers-list" class="items-list">
+                        <div class="loading">Carregando torres...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="tower-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="tower-modal-title">Nova Torre</h2>
+                <button class="modal-close" id="tower-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="tower-form">
+                    <div class="form-group">
+                        <label for="tower-name">Nome *</label>
+                        <input type="text" class="form-control" id="tower-name" required
+                               placeholder="Ex: Helpdesk">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tower-abbreviation">Sigla *</label>
+                        <input type="text" class="form-control" id="tower-abbreviation" required
+                               placeholder="Ex: HD" maxlength="20">
+                        <small style="color: var(--text-secondary);">Letras e números, usada no código dos documentos desta torre (ex: POP_HD_001)</small>
+                    </div>
+
+                    <div class="form-group" id="tower-active-group" style="display: none;">
+                        <label for="tower-active">Status</label>
+                        <select class="form-control" id="tower-active">
+                            <option value="true">✅ Ativa</option>
+                            <option value="false">⛔ Inativa</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="tower-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="tower-modal-save">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/towers.js"></script>
+</body>
+</html>

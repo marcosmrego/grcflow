@@ -83,12 +83,10 @@ const Dashboard = {
     async loadStats() {
         try {
             // Get knowledge count
-            const knowledge = await API.getKnowledge(1);
+            const kbStats = await API.getKnowledgeStats();
             const kbCount = document.getElementById('kb-count');
-            if (kbCount && knowledge.length) {
-                kbCount.textContent = knowledge.length || 0;
-            } else {
-                kbCount.textContent = '0';
+            if (kbCount) {
+                kbCount.textContent = kbStats.total || 0;
             }
 
             // Get flows

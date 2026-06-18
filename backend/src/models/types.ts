@@ -21,11 +21,24 @@ export interface KnowledgeItem {
   tags: string[];
   docType: DocType;
   documentCode?: string | null;
+  towerId?: string | null;
   confidentiality: Confidentiality;
   status: KnowledgeItemStatus;
   validityDays: number;
   approvedAt?: Date | null;
   expiresAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Cadastro de torres/departamentos (RF002): gera e numera o código do documento
+// automaticamente por torre + tipo de documento (ex: POP_HD_001).
+export interface Tower {
+  id: string;
+  companyId: string;
+  name: string;
+  abbreviation: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +136,11 @@ export interface Company {
 
 export type UserRole = 'admin' | 'editor' | 'viewer';
 
+// Alçada de aprovação (RF004) que o usuário está autorizado a decidir no workflow de
+// 3 níveis da Base de Conhecimento. Sem relação com `role` — um editor só pode aprovar
+// a alçada do seu grupo; admin aprova qualquer alçada independente do grupo.
+export type ApprovalGroup = 'technical' | 'compliance' | 'final';
+
 export interface User {
   id: string;
   company_id: string;
@@ -130,6 +148,7 @@ export interface User {
   name: string;
   password_hash: string;
   role: UserRole;
+  approval_group?: ApprovalGroup | null;
   is_active: boolean;
   last_login?: Date;
   created_at: Date;
