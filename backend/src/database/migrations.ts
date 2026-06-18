@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { db } from '../config/database';
 import { config } from '../config';
 
@@ -278,35 +279,6 @@ const migrations = [
     EXECUTE FUNCTION ${schema}.update_updated_at_column();
   `,
 
-  // Admin inicial da Empresa Demo (senha: 123456)
-  `
-  INSERT INTO users (email, name, password_hash, role, is_active, company_id)
-  VALUES (
-    'admin@grcflow.local',
-    'Administrator',
-    '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
-    'admin',
-    TRUE,
-    (SELECT id FROM companies WHERE name = 'Empresa Demo' LIMIT 1)
-  ) ON CONFLICT (email) DO UPDATE SET
-    password_hash = '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
-    is_active = TRUE;
-  `,
-
-  // Usuário de sistema inicial — opera a plataforma (gestão de empresas, suporte), senha: 123456
-  `
-  INSERT INTO system_users (email, name, password_hash, role, is_active)
-  VALUES (
-    'platform-admin@grcflow.local',
-    'Platform Administrator',
-    '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
-    'super_admin',
-    TRUE
-  ) ON CONFLICT (email) DO UPDATE SET
-    password_hash = '$2a$10$OPMC.i6W1nG0Ha6R4SRocu1tJYYhko9bJ1Naq/3MZFE6UYek7wmqq',
-    is_active = TRUE;
-  `,
-
   // ============= CICLO DE VIDA, VERSIONAMENTO E WORKFLOW DE APROVAÇÃO =============
   // Estende knowledge_items com tipo de documento, código identificador, categoria (FK),
   // confidencialidade, validade e ciclo de vida completo (RF001-RF006 do SRS + FEAT-01)
@@ -423,6 +395,41 @@ const migrations = [
   CREATE INDEX IF NOT EXISTS idx_knowledge_tower_id ON knowledge_items(tower_id);
   `,
 ];
+
+// Cria os admins iniciais (Empresa Demo + plataforma) somente na primeira execução e somente
+// se a senha vier de uma env var — nunca mais um hash fixo no código. Anteriormente o hash de
+// "123456" ficava comitado no repositório (público) e o INSERT usava ON CONFLICT DO UPDATE,
+// o que resetava a senha e reativava a conta a cada restart do servidor, mesmo após troca manual.
+if (process.env.SEED_ADMIN_PASSWORD) {
+  migrations.push(`
+  INSERT INTO users (email, name, password_hash, role, is_active, company_id)
+  VALUES (
+    'admin@grcflow.local',
+    'Administrator',
+    '${bcrypt.hashSync(process.env.SEED_ADMIN_PASSWORD, 10)}',
+    'admin',
+    TRUE,
+    (SELECT id FROM companies WHERE name = 'Empresa Demo' LIMIT 1)
+  ) ON CONFLICT (email) DO NOTHING;
+  `);
+} else {
+  console.warn('[seed] SEED_ADMIN_PASSWORD não definida — admin inicial da Empresa Demo não será criado.');
+}
+
+if (process.env.SEED_PLATFORM_ADMIN_PASSWORD) {
+  migrations.push(`
+  INSERT INTO system_users (email, name, password_hash, role, is_active)
+  VALUES (
+    'platform-admin@grcflow.local',
+    'Platform Administrator',
+    '${bcrypt.hashSync(process.env.SEED_PLATFORM_ADMIN_PASSWORD, 10)}',
+    'super_admin',
+    TRUE
+  ) ON CONFLICT (email) DO NOTHING;
+  `);
+} else {
+  console.warn('[seed] SEED_PLATFORM_ADMIN_PASSWORD não definida — admin de plataforma inicial não será criado.');
+}
 
 export async function runMigrations() {
   console.log('Running database migrations...');

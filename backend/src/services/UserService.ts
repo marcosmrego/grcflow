@@ -3,19 +3,11 @@ import { AuthService } from './AuthService';
 import { userRepository } from '../repositories/UserRepository';
 import { companyRepository } from '../repositories/CompanyRepository';
 import { User, AuthTokens, UserPayload, ApprovalGroup } from '../models/types';
-import { ValidationError, AuthenticationError, ConflictError, NotFoundError } from '../middleware';
+import { ValidationError, AuthenticationError, ConflictError } from '../middleware';
 
 interface LoginRequest {
   email: string;
   password: string;
-}
-
-interface RegisterRequest {
-  email: string;
-  name: string;
-  password: string;
-  passwordConfirm?: string;
-  companyId: string;
 }
 
 interface AuthResponse {
@@ -60,64 +52,6 @@ export class UserService {
 
     // Update last login
     await userRepository.updateLastLogin(user.id);
-
-    // Generate tokens
-    const tokens = AuthService.generateAuthTokens(user);
-
-    return {
-      token: tokens.token,
-      refreshToken: tokens.refreshToken,
-      user: AuthService.toUserPayload(user),
-    };
-  }
-
-  /**
-   * Register new user
-   */
-  async register(registerData: RegisterRequest): Promise<AuthResponse> {
-    const { email, name, password, passwordConfirm, companyId } = registerData;
-
-    // Validate input
-    if (!email || !name || !password || !companyId) {
-      throw new ValidationError('Email, name, password and companyId are required');
-    }
-
-    if (password.length < 8) {
-      throw new ValidationError('Password must be at least 8 characters long');
-    }
-
-    if (passwordConfirm && password !== passwordConfirm) {
-      throw new ValidationError('Passwords do not match');
-    }
-
-    // Validate company exists and is active
-    const company = await companyRepository.findById(companyId);
-    if (!company) {
-      throw new NotFoundError('Company not found');
-    }
-    if (!company.is_active) {
-      throw new ValidationError('Company is not active');
-    }
-
-    // Check if email already exists
-    const emailExists = await userRepository.emailExists(email);
-    if (emailExists) {
-      throw new ConflictError('Email already registered');
-    }
-
-    // Hash password
-    const passwordHash = await AuthService.hashPassword(password);
-
-    // Create user
-    const user = await userRepository.create({
-      id: uuidv4(),
-      company_id: companyId,
-      email: email.toLowerCase(),
-      name: name.trim(),
-      password_hash: passwordHash,
-      role: 'viewer', // Default role for new users
-      is_active: true,
-    });
 
     // Generate tokens
     const tokens = AuthService.generateAuthTokens(user);

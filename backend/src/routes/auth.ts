@@ -4,7 +4,6 @@ import { userService } from '../services/UserService';
 import {
   authMiddleware,
   authLimiter,
-  moderateLimiter,
   asyncHandler,
   AuthenticationError,
 } from '../middleware';
@@ -67,58 +66,6 @@ router.post(
     };
 
     res.json(response);
-  })
-);
-
-/**
- * POST /api/auth/register
- * Register new user
- * Rate limited to 20 attempts per minute
- */
-router.post(
-  '/register',
-  moderateLimiter,
-  [
-    body('email')
-      .isEmail()
-      .normalizeEmail()
-      .withMessage('Invalid email address'),
-    body('name')
-      .trim()
-      .isLength({ min: 2, max: 255 })
-      .withMessage('Name must be between 2 and 255 characters'),
-    body('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters long')
-      .matches(/[A-Z]/)
-      .withMessage('Password must contain at least one uppercase letter')
-      .matches(/[a-z]/)
-      .withMessage('Password must contain at least one lowercase letter')
-      .matches(/[0-9]/)
-      .withMessage('Password must contain at least one number'),
-    body('passwordConfirm')
-      .custom((value, { req }) => value === req.body.password)
-      .withMessage('Passwords do not match'),
-    body('companyId')
-      .isUUID()
-      .withMessage('A valid companyId is required'),
-  ],
-  handleValidationErrors,
-  asyncHandler(async (req: Request, res: Response) => {
-    const result = await userService.register({
-      email: req.body.email,
-      name: req.body.name,
-      password: req.body.password,
-      passwordConfirm: req.body.passwordConfirm,
-      companyId: req.body.companyId,
-    });
-
-    const response: ApiResponse<any> = {
-      success: true,
-      data: result,
-    };
-
-    res.status(201).json(response);
   })
 );
 
