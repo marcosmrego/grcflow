@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { towerService } from '../services/TowerService';
-import { authMiddleware, requireAuth, requireAdmin, AuthenticationError } from '../middleware';
+import { authMiddleware, requireAuth, requireAdmin, requireModule, AuthenticationError } from '../middleware';
 
 const router = express.Router();
 
-router.use(authMiddleware, requireAuth);
+// Torres existem só pra numerar documentos da Base de Conhecimento — mesmo módulo daquela.
+router.use(authMiddleware, requireAuth, requireModule('knowledge_base'));
 
 const handleValidationErrors = (req: Request, res: Response, next: Function) => {
   const errors = validationResult(req);

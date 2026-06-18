@@ -87,6 +87,43 @@ const AdminAPI = {
         });
     },
 
+    // Modules
+    async getCompanyModules(companyId) {
+        return this.request(`/companies/${companyId}/modules`);
+    },
+
+    async setCompanyModule(companyId, moduleKey, data) {
+        return this.request(`/companies/${companyId}/modules/${moduleKey}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    // Billing (Faturamento)
+    async getCompanyInvoices(companyId) {
+        return this.request(`/companies/${companyId}/invoices`);
+    },
+
+    async createCompanyInvoice(companyId, data) {
+        return this.request(`/companies/${companyId}/invoices`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async updateCompanyInvoice(companyId, invoiceId, data) {
+        return this.request(`/companies/${companyId}/invoices/${invoiceId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async deleteCompanyInvoice(companyId, invoiceId) {
+        return this.request(`/companies/${companyId}/invoices/${invoiceId}`, {
+            method: 'DELETE'
+        });
+    },
+
     // Helper Methods
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;

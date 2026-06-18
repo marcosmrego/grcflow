@@ -24,6 +24,9 @@ export {
 // Audit middlewares
 export { auditContextMiddleware, asyncHandler } from './audit';
 
+// Module-gating middleware (SaaS — acesso por módulo contratado)
+export { requireModule } from './modules';
+
 // Rate limiting middlewares
 export {
   generalLimiter,

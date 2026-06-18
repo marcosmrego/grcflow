@@ -81,36 +81,38 @@ const Dashboard = {
     },
 
     async loadStats() {
+        // Módulos contratados variam por empresa — uma falha (módulo não contratado) não
+        // pode impedir as estatísticas do outro módulo de carregar.
         try {
-            // Get knowledge count
             const kbStats = await API.getKnowledgeStats();
             const kbCount = document.getElementById('kb-count');
             if (kbCount) {
                 kbCount.textContent = kbStats.total || 0;
             }
+        } catch (error) {
+            console.error('Error loading knowledge stats:', error);
+        }
 
-            // Get flows
+        try {
             const allFlows = await API.getFlows();
             const flowsCount = document.getElementById('flows-count');
             if (flowsCount) {
                 flowsCount.textContent = allFlows.length || 0;
             }
 
-            // Get published flows
             const published = await API.getFlows('published');
             const publishedCount = document.getElementById('published-count');
             if (publishedCount) {
                 publishedCount.textContent = published.length || 0;
             }
 
-            // Get draft flows
             const draft = await API.getFlows('draft');
             const draftCount = document.getElementById('draft-count');
             if (draftCount) {
                 draftCount.textContent = draft.length || 0;
             }
         } catch (error) {
-            console.error('Error loading stats:', error);
+            console.error('Error loading flow stats:', error);
         }
     },
 

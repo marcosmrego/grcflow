@@ -415,6 +415,88 @@ const migrations = [
   WHERE u.email = 'admin@expansao-ai.com.br'
   ON CONFLICT (email) DO NOTHING;
   `,
+
+  // Cadastro de empresa mais completo (dados comerciais e de contato), pensando no produto
+  // como SaaS. Preço ainda não está padronizado — por isso monthly_fee é um campo livre,
+  // configurável por empresa, em vez de um plano fixo.
+  `
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS legal_name VARCHAR(255);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS segment VARCHAR(100);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS website VARCHAR(255);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS contact_name VARCHAR(255);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS contact_email VARCHAR(255);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(50);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS address VARCHAR(255);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS state VARCHAR(2);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS zip_code VARCHAR(20);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS monthly_fee NUMERIC(10,2);
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS notes TEXT;
+  `,
+
+  // Catálogo de módulos comercializáveis. Cada empresa "adquire" módulos individualmente
+  // (company_modules) — empresa sem o módulo ativo perde acesso às rotas correspondentes
+  // (ver requireModule no backend). Preço por módulo também é configurável por empresa,
+  // já que ainda não há tabela de preços fechada.
+  `
+  CREATE TABLE IF NOT EXISTS modules (
+    key VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    default_price NUMERIC(10,2) NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  INSERT INTO modules (key, name, description, default_price) VALUES
+    ('knowledge_base', 'Base de Conhecimento', 'Gestão documental, ciclo de vida, workflow de aprovação e torres/departamentos', 0)
+    ON CONFLICT (key) DO NOTHING;
+  INSERT INTO modules (key, name, description, default_price) VALUES
+    ('flows', 'Fluxos de Processos', 'Modelagem e gestão de fluxos de processos', 0)
+    ON CONFLICT (key) DO NOTHING;
+
+  CREATE TABLE IF NOT EXISTS company_modules (
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    module_key VARCHAR(50) NOT NULL REFERENCES modules(key) ON DELETE CASCADE,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    price NUMERIC(10,2),
+    acquired_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (company_id, module_key)
+  );
+
+  -- Backfill único: empresas já existentes continuam com o que já usavam (knowledge_base e
+  -- flows), pra não quebrar nada em produção quando o gating entrar em vigor. Restrito a essas
+  -- duas chaves de propósito — se um módulo novo for adicionado depois, ele NÃO deve ser
+  -- concedido de graça pra empresas existentes nesse mesmo INSERT.
+  INSERT INTO company_modules (company_id, module_key, is_active, price)
+  SELECT c.id, m.key, TRUE, m.default_price
+  FROM companies c
+  CROSS JOIN modules m
+  WHERE m.key IN ('knowledge_base', 'flows')
+  ON CONFLICT (company_id, module_key) DO NOTHING;
+  `,
+
+  // Histórico de cobranças mensais por empresa (mini-financeiro). Status fica só
+  // pending/paid/cancelled — "atrasado" é derivado (pending + due_date no passado), calculado
+  // na camada de serviço, pra não precisar de um cron sincronizando esse estado.
+  `
+  CREATE TABLE IF NOT EXISTS company_invoices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    reference_month DATE NOT NULL,
+    amount NUMERIC(10,2) NOT NULL,
+    due_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','paid','cancelled')),
+    paid_at TIMESTAMP,
+    notes TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (company_id, reference_month)
+  );
+  CREATE INDEX IF NOT EXISTS idx_company_invoices_company_id ON company_invoices(company_id);
+  `,
 ];
 
 // Cria os admins iniciais (Empresa Demo + plataforma) somente na primeira execução e somente

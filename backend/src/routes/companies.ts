@@ -93,6 +93,36 @@ router.get(
   })
 );
 
+const commercialFieldValidators = [
+  body('legalName').optional().trim().isLength({ max: 255 }),
+  body('segment').optional().trim().isLength({ max: 100 }),
+  body('website').optional().trim().isLength({ max: 255 }),
+  body('contactName').optional().trim().isLength({ max: 255 }),
+  body('contactEmail').optional({ checkFalsy: true }).isEmail().withMessage('Invalid contact email'),
+  body('contactPhone').optional().trim().isLength({ max: 50 }),
+  body('address').optional().trim().isLength({ max: 255 }),
+  body('city').optional().trim().isLength({ max: 100 }),
+  body('state').optional().trim().isLength({ max: 2 }),
+  body('zipCode').optional().trim().isLength({ max: 20 }),
+  body('monthlyFee').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('monthlyFee must be a non-negative number'),
+  body('notes').optional().trim().isLength({ max: 2000 }),
+];
+
+const commercialFieldsFromBody = (body: any) => ({
+  legalName: body.legalName,
+  segment: body.segment,
+  website: body.website,
+  contactName: body.contactName,
+  contactEmail: body.contactEmail,
+  contactPhone: body.contactPhone,
+  address: body.address,
+  city: body.city,
+  state: body.state,
+  zipCode: body.zipCode,
+  monthlyFee: body.monthlyFee === undefined ? undefined : (body.monthlyFee === null || body.monthlyFee === '' ? null : parseFloat(body.monthlyFee)),
+  notes: body.notes,
+});
+
 /**
  * POST /api/companies
  * Create a new company (system admin only)
@@ -105,6 +135,7 @@ router.post(
       .isLength({ min: 2, max: 255 })
       .withMessage('Name must be between 2 and 255 characters'),
     body('document').optional().trim().isLength({ max: 50 }),
+    ...commercialFieldValidators,
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
@@ -116,6 +147,7 @@ router.post(
       {
         name: req.body.name,
         document: req.body.document,
+        ...commercialFieldsFromBody(req.body),
       },
       req.systemUser.id
     );
@@ -222,6 +254,7 @@ router.put(
     body('name').optional().trim().isLength({ min: 2, max: 255 }),
     body('document').optional().trim().isLength({ max: 50 }),
     body('is_active').optional().isBoolean(),
+    ...commercialFieldValidators,
   ],
   handleValidationErrors,
   asyncHandler(async (req: Request, res: Response) => {
@@ -235,6 +268,7 @@ router.put(
         name: req.body.name,
         document: req.body.document,
         is_active: req.body.is_active,
+        ...commercialFieldsFromBody(req.body),
       },
       req.systemUser.id
     );
@@ -244,6 +278,130 @@ router.put(
       data: company,
     };
 
+    res.json(response);
+  })
+);
+
+/**
+ * GET /api/companies/:id/modules
+ * List catalog modules merged with this company's acquisition state (system admin only)
+ */
+router.get(
+  '/:id/modules',
+  [param('id').isUUID().withMessage('Invalid company ID')],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const modules = await companyService.listModules(req.params.id);
+    const response: ApiResponse<any> = { success: true, data: modules };
+    res.json(response);
+  })
+);
+
+/**
+ * PUT /api/companies/:id/modules/:moduleKey
+ * Grant/revoke a module and/or set its price for this company (system admin only)
+ */
+router.put(
+  '/:id/modules/:moduleKey',
+  [
+    param('id').isUUID().withMessage('Invalid company ID'),
+    param('moduleKey').isString(),
+    body('isActive').optional().isBoolean(),
+    body('price').optional({ nullable: true }).isFloat({ min: 0 }),
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const module = await companyService.setModule(req.params.id, req.params.moduleKey, {
+      isActive: req.body.isActive,
+      price: req.body.price === null || req.body.price === undefined ? undefined : parseFloat(req.body.price),
+    });
+    const response: ApiResponse<any> = { success: true, data: module };
+    res.json(response);
+  })
+);
+
+/**
+ * GET /api/companies/:id/invoices
+ * List monthly billing history for a company (system admin only)
+ */
+router.get(
+  '/:id/invoices',
+  [param('id').isUUID().withMessage('Invalid company ID')],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const invoices = await companyService.listInvoices(req.params.id);
+    const response: ApiResponse<any> = { success: true, data: invoices };
+    res.json(response);
+  })
+);
+
+/**
+ * POST /api/companies/:id/invoices
+ * Create a new monthly invoice/charge (system admin only)
+ */
+router.post(
+  '/:id/invoices',
+  [
+    param('id').isUUID().withMessage('Invalid company ID'),
+    body('referenceMonth').isISO8601().withMessage('referenceMonth must be a date'),
+    body('amount').isFloat({ min: 0 }).withMessage('amount must be a non-negative number'),
+    body('dueDate').isISO8601().withMessage('dueDate must be a date'),
+    body('notes').optional().trim().isLength({ max: 2000 }),
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const invoice = await companyService.createInvoice(req.params.id, {
+      referenceMonth: req.body.referenceMonth,
+      amount: parseFloat(req.body.amount),
+      dueDate: req.body.dueDate,
+      notes: req.body.notes,
+    });
+    const response: ApiResponse<any> = { success: true, data: invoice };
+    res.status(201).json(response);
+  })
+);
+
+/**
+ * PUT /api/companies/:id/invoices/:invoiceId
+ * Update an invoice — amount/due date/notes, or mark as paid/cancelled (system admin only)
+ */
+router.put(
+  '/:id/invoices/:invoiceId',
+  [
+    param('id').isUUID().withMessage('Invalid company ID'),
+    param('invoiceId').isUUID().withMessage('Invalid invoice ID'),
+    body('amount').optional().isFloat({ min: 0 }),
+    body('dueDate').optional().isISO8601(),
+    body('status').optional().isIn(['pending', 'paid', 'cancelled']),
+    body('notes').optional().trim().isLength({ max: 2000 }),
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const invoice = await companyService.updateInvoice(req.params.id, req.params.invoiceId, {
+      amount: req.body.amount === undefined ? undefined : parseFloat(req.body.amount),
+      dueDate: req.body.dueDate,
+      status: req.body.status,
+      notes: req.body.notes,
+    });
+    const response: ApiResponse<any> = { success: true, data: invoice };
+    res.json(response);
+  })
+);
+
+/**
+ * DELETE /api/companies/:id/invoices/:invoiceId
+ * Remove an invoice entry (system admin only)
+ */
+router.delete(
+  '/:id/invoices/:invoiceId',
+  [
+    param('id').isUUID().withMessage('Invalid company ID'),
+    param('invoiceId').isUUID().withMessage('Invalid invoice ID'),
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    await companyService.deleteInvoice(req.params.id, req.params.invoiceId);
+    const response: ApiResponse<{ message: string }> = { success: true, data: { message: 'Invoice deleted successfully' } };
     res.json(response);
   })
 );

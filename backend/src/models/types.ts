@@ -126,10 +126,67 @@ export interface Company {
   id: string;
   name: string;
   document?: string;
+  // Dados comerciais e de contato (SaaS)
+  legal_name?: string | null;
+  segment?: string | null;
+  website?: string | null;
+  contact_name?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  // Mensalidade configurável — sem tabela de preços fechada ainda
+  monthly_fee?: number | null;
+  notes?: string | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;
+}
+
+// ============= MÓDULOS (SAAS) =============
+
+// Catálogo de módulos comercializáveis (plataforma).
+export interface ModuleDefinition {
+  key: string;
+  name: string;
+  description?: string | null;
+  defaultPrice: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Módulo + estado de aquisição de uma empresa específica (join com a tabela de catálogo).
+export interface CompanyModule {
+  companyId: string;
+  moduleKey: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  price: number | null;
+  acquiredAt: Date;
+  updatedAt: Date;
+}
+
+export type InvoiceStatus = 'pending' | 'paid' | 'cancelled';
+// Status calculado pra exibição — "overdue" nunca é gravado, é derivado de pending + due_date no passado.
+export type InvoiceDisplayStatus = 'pending' | 'paid' | 'cancelled' | 'overdue';
+
+export interface CompanyInvoice {
+  id: string;
+  companyId: string;
+  referenceMonth: Date;
+  amount: number;
+  dueDate: Date;
+  status: InvoiceStatus;
+  displayStatus: InvoiceDisplayStatus;
+  paidAt?: Date | null;
+  notes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ============= AUTHENTICATION & AUTHORIZATION =============

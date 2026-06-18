@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
 import { processFlowService } from '../services/ProcessFlowService';
 import { validationResult, body, query, param } from 'express-validator';
-import { authMiddleware, requireAuth, AuthenticationError, NotFoundError } from '../middleware';
+import { authMiddleware, requireAuth, requireModule, AuthenticationError, NotFoundError } from '../middleware';
 
 const router = express.Router();
 
-router.use(authMiddleware, requireAuth);
+router.use(authMiddleware, requireAuth, requireModule('flows'));
 
 const handleValidationErrors = (req: Request, res: Response, next: Function) => {
   const errors = validationResult(req);

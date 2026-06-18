@@ -6,6 +6,8 @@ const Companies = {
     editingId: null,
     adminModalCompany: null,
     usersModalCompany: null,
+    modulesModalCompany: null,
+    invoicesModalCompany: null,
 
     async init() {
         this.setupEventListeners();
@@ -56,6 +58,42 @@ const Companies = {
         const adminModalSave = document.getElementById('company-admin-modal-save');
         if (adminModalSave) adminModalSave.addEventListener('click', () => this.saveCompanyAdmin());
 
+        const modulesModalClose = document.getElementById('company-modules-modal-close');
+        if (modulesModalClose) modulesModalClose.addEventListener('click', () => this.closeModulesModal());
+
+        const modulesList = document.getElementById('modules-modal-list');
+        if (modulesList) {
+            modulesList.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action="save-module"]');
+                if (btn) this.saveModule(btn.dataset.key);
+            });
+        }
+
+        const invoicesModalClose = document.getElementById('company-invoices-modal-close');
+        if (invoicesModalClose) invoicesModalClose.addEventListener('click', () => this.closeInvoicesModal());
+
+        const invoiceForm = document.getElementById('invoice-form');
+        if (invoiceForm) {
+            invoiceForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createInvoice();
+            });
+        }
+
+        const invoicesList = document.getElementById('invoices-modal-list');
+        if (invoicesList) {
+            invoicesList.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const invoiceId = btn.dataset.id;
+                switch (btn.dataset.action) {
+                    case 'mark-paid': this.updateInvoiceStatus(invoiceId, 'paid'); break;
+                    case 'cancel-invoice': this.updateInvoiceStatus(invoiceId, 'cancelled'); break;
+                    case 'delete-invoice': this.confirmDeleteInvoice(invoiceId); break;
+                }
+            });
+        }
+
         const list = document.getElementById('companies-list');
         if (list) {
             list.addEventListener('click', (e) => {
@@ -67,6 +105,8 @@ const Companies = {
                     case 'edit': this.editCompany(id); break;
                     case 'view-users': this.openUsersModal(id, btn.dataset.name); break;
                     case 'create-admin': this.openCreateAdminModal(id, btn.dataset.name); break;
+                    case 'view-modules': this.openModulesModal(id, btn.dataset.name); break;
+                    case 'view-invoices': this.openInvoicesModal(id, btn.dataset.name); break;
                     case 'toggle-active': this.toggleActive(id, btn.dataset.active === 'true'); break;
                     case 'delete': this.confirmDelete(id); break;
                 }
@@ -115,6 +155,7 @@ const Companies = {
         const statusBadge = company.is_active
             ? '<span class="badge badge-primary">✅ Ativa</span>'
             : '<span class="badge" style="background: var(--danger);">⛔ Inativa</span>';
+        const monthlyFee = company.monthly_fee != null ? this.formatCurrency(company.monthly_fee) : 'Não definida';
 
         return `
             <div class="item-row">
@@ -123,12 +164,15 @@ const Companies = {
                     <div class="item-description">${this.escapeHtml(company.document || 'Sem documento cadastrado')}</div>
                     <div class="item-meta">
                         <span>📅 ${AdminAPI.formatDate(company.created_at)}</span>
+                        <span>💰 ${monthlyFee}</span>
                         <span>${statusBadge}</span>
                     </div>
                 </div>
                 <div class="item-actions">
                     <button class="item-action" title="Ver usuários" data-action="view-users" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👥</button>
                     <button class="item-action" title="Criar usuário admin" data-action="create-admin" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">👤</button>
+                    <button class="item-action" title="Módulos" data-action="view-modules" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">🧩</button>
+                    <button class="item-action" title="Faturamento" data-action="view-invoices" data-id="${company.id}" data-name="${this.escapeHtml(company.name)}">💰</button>
                     <button class="item-action" title="Editar" data-action="edit" data-id="${company.id}">✏️</button>
                     <button class="item-action" title="${company.is_active ? 'Desativar' : 'Ativar'}" data-action="toggle-active" data-id="${company.id}" data-active="${company.is_active}">${company.is_active ? '⛔' : '✅'}</button>
                     <button class="item-action" title="Deletar" data-action="delete" data-id="${company.id}">🗑️</button>
@@ -190,6 +234,18 @@ const Companies = {
             document.getElementById('company-modal-title').textContent = 'Editar Empresa';
             document.getElementById('company-name').value = company.name;
             document.getElementById('company-document').value = company.document || '';
+            document.getElementById('company-legal-name').value = company.legal_name || '';
+            document.getElementById('company-segment').value = company.segment || '';
+            document.getElementById('company-website').value = company.website || '';
+            document.getElementById('company-contact-name').value = company.contact_name || '';
+            document.getElementById('company-contact-email').value = company.contact_email || '';
+            document.getElementById('company-contact-phone').value = company.contact_phone || '';
+            document.getElementById('company-address').value = company.address || '';
+            document.getElementById('company-city').value = company.city || '';
+            document.getElementById('company-state').value = company.state || '';
+            document.getElementById('company-zip').value = company.zip_code || '';
+            document.getElementById('company-monthly-fee').value = company.monthly_fee != null ? company.monthly_fee : '';
+            document.getElementById('company-notes').value = company.notes || '';
             document.getElementById('company-active').value = String(company.is_active);
             document.getElementById('company-active-group').style.display = 'block';
 
@@ -204,13 +260,29 @@ const Companies = {
         try {
             const name = document.getElementById('company-name').value.trim();
             const documentValue = document.getElementById('company-document').value.trim();
+            const monthlyFeeValue = document.getElementById('company-monthly-fee').value.trim();
 
             if (!name) {
                 alert('Digite o nome da empresa');
                 return;
             }
 
-            const data = { name, document: documentValue || undefined };
+            const data = {
+                name,
+                document: documentValue || undefined,
+                legalName: document.getElementById('company-legal-name').value.trim() || undefined,
+                segment: document.getElementById('company-segment').value.trim() || undefined,
+                website: document.getElementById('company-website').value.trim() || undefined,
+                contactName: document.getElementById('company-contact-name').value.trim() || undefined,
+                contactEmail: document.getElementById('company-contact-email').value.trim() || undefined,
+                contactPhone: document.getElementById('company-contact-phone').value.trim() || undefined,
+                address: document.getElementById('company-address').value.trim() || undefined,
+                city: document.getElementById('company-city').value.trim() || undefined,
+                state: document.getElementById('company-state').value.trim().toUpperCase() || undefined,
+                zipCode: document.getElementById('company-zip').value.trim() || undefined,
+                monthlyFee: monthlyFeeValue ? parseFloat(monthlyFeeValue) : null,
+                notes: document.getElementById('company-notes').value.trim() || undefined,
+            };
 
             if (this.editingId) {
                 data.is_active = document.getElementById('company-active').value === 'true';
@@ -361,6 +433,190 @@ const Companies = {
     closeUsersModal() {
         this.usersModalCompany = null;
         this.toggleModal('company-users-modal', false);
+    },
+
+    async openModulesModal(companyId, companyName) {
+        this.modulesModalCompany = companyId;
+        document.getElementById('modules-modal-title').textContent = `Módulos — ${companyName}`;
+        document.getElementById('modules-modal-list').innerHTML = '<div class="loading">Carregando...</div>';
+        this.toggleModal('company-modules-modal', true);
+        await this.loadModules();
+    },
+
+    async loadModules() {
+        const listEl = document.getElementById('modules-modal-list');
+        try {
+            const modules = await AdminAPI.getCompanyModules(this.modulesModalCompany);
+            listEl.innerHTML = modules.map(m => `
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-title">🧩 ${this.escapeHtml(m.name)}
+                            ${m.isActive
+                                ? '<span class="badge badge-primary">✅ Ativo</span>'
+                                : '<span class="badge" style="background: var(--danger);">⛔ Inativo</span>'}
+                        </div>
+                        ${m.description ? `<div class="item-description">${this.escapeHtml(m.description)}</div>` : ''}
+                        <div class="item-meta" style="gap: 1rem; align-items: center;">
+                            <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                                <input type="checkbox" class="module-active-checkbox" ${m.isActive ? 'checked' : ''}>
+                                Ativo
+                            </label>
+                            <span style="display:flex; align-items:center; gap:0.35rem;">
+                                R$ <input type="number" class="form-control module-price-input" style="width:110px;"
+                                    min="0" step="0.01" value="${m.price != null ? m.price : ''}" placeholder="0,00">
+                            </span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-primary btn-sm" data-action="save-module" data-key="${m.moduleKey}">Salvar</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading modules:', error);
+            listEl.innerHTML = '<div class="alert alert-danger">Erro ao carregar módulos</div>';
+        }
+    },
+
+    async saveModule(moduleKey) {
+        try {
+            const row = document.querySelector(`[data-action="save-module"][data-key="${moduleKey}"]`).closest('.item-row');
+            const isActive = row.querySelector('.module-active-checkbox').checked;
+            const priceValue = row.querySelector('.module-price-input').value;
+
+            await AdminAPI.setCompanyModule(this.modulesModalCompany, moduleKey, {
+                isActive,
+                price: priceValue !== '' ? parseFloat(priceValue) : null,
+            });
+            await this.loadModules();
+        } catch (error) {
+            console.error('Error saving module:', error);
+            alert(error.message || 'Erro ao salvar módulo');
+        }
+    },
+
+    closeModulesModal() {
+        this.modulesModalCompany = null;
+        this.toggleModal('company-modules-modal', false);
+    },
+
+    async openInvoicesModal(companyId, companyName) {
+        this.invoicesModalCompany = companyId;
+        document.getElementById('invoices-modal-title').textContent = `Faturamento — ${companyName}`;
+        document.getElementById('invoice-form').reset();
+        document.getElementById('invoices-modal-list').innerHTML = '<div class="loading">Carregando...</div>';
+        this.toggleModal('company-invoices-modal', true);
+        await this.loadInvoices();
+    },
+
+    invoiceStatusBadge(displayStatus) {
+        const map = {
+            paid: '<span class="badge badge-success">✅ Pago</span>',
+            pending: '<span class="badge badge-warning">⏳ Pendente</span>',
+            overdue: '<span class="badge badge-danger">⚠️ Atrasado</span>',
+            cancelled: '<span class="badge badge-secondary">🚫 Cancelado</span>',
+        };
+        return map[displayStatus] || displayStatus;
+    },
+
+    formatMonth(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    },
+
+    formatCurrency(value) {
+        return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    },
+
+    async loadInvoices() {
+        const listEl = document.getElementById('invoices-modal-list');
+        try {
+            const invoices = await AdminAPI.getCompanyInvoices(this.invoicesModalCompany);
+
+            if (invoices.length === 0) {
+                listEl.innerHTML = '<p style="color:var(--text-secondary)">Nenhuma cobrança registrada ainda.</p>';
+                return;
+            }
+
+            listEl.innerHTML = invoices.map(inv => `
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-title">${this.formatMonth(inv.referenceMonth)} ${this.invoiceStatusBadge(inv.displayStatus)}</div>
+                        <div class="item-description">${this.formatCurrency(inv.amount)}</div>
+                        <div class="item-meta">
+                            <span>📅 Vencimento: ${AdminAPI.formatDate(inv.dueDate)}</span>
+                            ${inv.paidAt ? `<span>Pago em ${AdminAPI.formatDate(inv.paidAt)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        ${inv.status === 'pending' ? `
+                            <button class="item-action" title="Marcar como pago" data-action="mark-paid" data-id="${inv.id}">✅</button>
+                            <button class="item-action" title="Cancelar" data-action="cancel-invoice" data-id="${inv.id}">🚫</button>
+                        ` : ''}
+                        <button class="item-action" title="Deletar" data-action="delete-invoice" data-id="${inv.id}">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading invoices:', error);
+            listEl.innerHTML = '<div class="alert alert-danger">Erro ao carregar faturamento</div>';
+        }
+    },
+
+    async createInvoice() {
+        try {
+            const referenceMonth = document.getElementById('invoice-reference-month').value;
+            const amount = document.getElementById('invoice-amount').value;
+            const dueDate = document.getElementById('invoice-due-date').value;
+
+            if (!referenceMonth || !amount || !dueDate) {
+                alert('Preencha mês de referência, valor e vencimento');
+                return;
+            }
+
+            await AdminAPI.createCompanyInvoice(this.invoicesModalCompany, {
+                referenceMonth: `${referenceMonth}-01`,
+                amount: parseFloat(amount),
+                dueDate,
+            });
+
+            document.getElementById('invoice-form').reset();
+            await this.loadInvoices();
+        } catch (error) {
+            console.error('Error creating invoice:', error);
+            alert(error.message || 'Erro ao criar cobrança');
+        }
+    },
+
+    async updateInvoiceStatus(invoiceId, status) {
+        try {
+            await AdminAPI.updateCompanyInvoice(this.invoicesModalCompany, invoiceId, { status });
+            await this.loadInvoices();
+        } catch (error) {
+            console.error('Error updating invoice:', error);
+            alert(error.message || 'Erro ao atualizar cobrança');
+        }
+    },
+
+    confirmDeleteInvoice(invoiceId) {
+        if (confirm('Tem certeza que deseja deletar esta cobrança?')) {
+            this.deleteInvoice(invoiceId);
+        }
+    },
+
+    async deleteInvoice(invoiceId) {
+        try {
+            await AdminAPI.deleteCompanyInvoice(this.invoicesModalCompany, invoiceId);
+            await this.loadInvoices();
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+            alert(error.message || 'Erro ao deletar cobrança');
+        }
+    },
+
+    closeInvoicesModal() {
+        this.invoicesModalCompany = null;
+        this.toggleModal('company-invoices-modal', false);
     },
 
     escapeHtml(text) {

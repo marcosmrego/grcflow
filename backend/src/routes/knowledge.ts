@@ -2,11 +2,11 @@ import express, { Request, Response } from 'express';
 import { knowledgeService } from '../services/KnowledgeService';
 import { userRepository } from '../repositories/UserRepository';
 import { validationResult, body, query, param } from 'express-validator';
-import { authMiddleware, requireAuth, requirePermission, AuthenticationError } from '../middleware';
+import { authMiddleware, requireAuth, requirePermission, requireModule, AuthenticationError } from '../middleware';
 
 const router = express.Router();
 
-router.use(authMiddleware, requireAuth);
+router.use(authMiddleware, requireAuth, requireModule('knowledge_base'));
 
 // Middleware para tratamento de erros de validação
 const handleValidationErrors = (req: Request, res: Response, next: Function) => {
