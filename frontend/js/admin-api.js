@@ -129,6 +129,18 @@ const AdminAPI = {
         });
     },
 
+    // Leads (captura da landing page)
+    async getLeads(page = 1, limit = 50, search = '') {
+        const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+        return this.request(`/leads?page=${page}&limit=${limit}${searchParam}`);
+    },
+
+    async deleteLead(id) {
+        return this.request(`/leads/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
     // Helper Methods
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;

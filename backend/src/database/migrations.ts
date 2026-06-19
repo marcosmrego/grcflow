@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { db } from '../config/database';
 import { config } from '../config';
 
@@ -497,6 +498,26 @@ const migrations = [
   );
   CREATE INDEX IF NOT EXISTS idx_company_invoices_company_id ON company_invoices(company_id);
   `,
+
+  // Marca a Empresa Demo como tal (acesso público via /api/demo/login, sempre somente
+  // leitura) e cria a tabela de leads capturados pela landing page de marketing.
+  `
+  ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT FALSE;
+  UPDATE companies SET is_demo = TRUE WHERE name = 'Empresa Demo';
+
+  CREATE TABLE IF NOT EXISTS leads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255),
+    phone VARCHAR(50),
+    message TEXT,
+    source VARCHAR(100),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at);
+  CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
+  `,
 ];
 
 // Cria os admins iniciais (Empresa Demo + plataforma) somente na primeira execução e somente
@@ -533,6 +554,17 @@ if (process.env.SEED_PLATFORM_ADMIN_PASSWORD) {
 } else {
   console.warn('[seed] SEED_PLATFORM_ADMIN_PASSWORD não definida — admin de plataforma inicial não será criado.');
 }
+
+// Usuário de acesso à demonstração pública (landing page), vinculado à Empresa Demo com
+// role viewer (somente leitura). A senha é gerada aleatoriamente e descartada em seguida —
+// POST /api/demo/login nunca verifica senha, o hash só existe pra satisfazer a coluna NOT
+// NULL. Diferente dos admins acima, não depende de env var porque não há segredo real aqui.
+migrations.push(`
+  INSERT INTO users (email, name, password_hash, role, is_active, company_id)
+  SELECT 'demo@grcflow.local', 'Visitante Demo', '${bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10)}',
+         'viewer', TRUE, (SELECT id FROM companies WHERE name = 'Empresa Demo' LIMIT 1)
+  WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'demo@grcflow.local');
+`);
 
 export async function runMigrations() {
   console.log('Running database migrations...');

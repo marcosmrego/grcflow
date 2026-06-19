@@ -141,9 +141,24 @@ export interface Company {
   monthly_fee?: number | null;
   notes?: string | null;
   is_active: boolean;
+  // Empresa de demonstração pública (acesso via POST /api/demo/login, sempre somente leitura)
+  is_demo: boolean;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;
+}
+
+// ============= LEADS (CAPTURA DE MARKETING) =============
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  companyName?: string | null;
+  phone?: string | null;
+  message?: string | null;
+  source?: string | null;
+  createdAt: Date;
 }
 
 // ============= MÓDULOS (SAAS) =============

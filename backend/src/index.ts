@@ -13,6 +13,8 @@ import towersRoutes from './routes/towers';
 import companiesRoutes from './routes/companies';
 import systemAuthRoutes from './routes/systemAuth';
 import systemUsersRoutes from './routes/systemUsers';
+import demoRoutes from './routes/demo';
+import leadsRoutes from './routes/leads';
 import {
   auditContextMiddleware,
   generalLimiter,
@@ -60,6 +62,8 @@ app.use('/api/towers', towersRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/system/auth', systemAuthRoutes);
 app.use('/api/system/users', systemUsersRoutes);
+app.use('/api/demo', demoRoutes);
+app.use('/api/leads', leadsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

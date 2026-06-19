@@ -156,6 +156,18 @@ const API = {
 
         const towersNavItem = document.getElementById('nav-towers-item');
         if (towersNavItem) towersNavItem.style.display = isAdmin ? '' : 'none';
+
+        if (user && user.isDemo) this.injectDemoBanner();
+    },
+
+    injectDemoBanner() {
+        if (document.getElementById('demo-banner')) return;
+
+        const banner = document.createElement('div');
+        banner.id = 'demo-banner';
+        banner.style.cssText = 'position:sticky;top:0;z-index:101;background:#ffc107;color:#212529;text-align:center;padding:0.5rem 1rem;font-size:0.875rem;font-weight:500;';
+        banner.textContent = '🔍 Modo demonstração — dados fictícios, somente leitura.';
+        document.body.insertBefore(banner, document.body.firstChild);
     },
 
     // Health Check
