@@ -29,17 +29,19 @@ export class AuthService {
   }
 
   /**
-   * Generate a short-lived, read-only access token for the public demo session
-   * (POST /api/demo/login). Role is forced to 'viewer' in the payload regardless of the
-   * seeded user's actual role, so the token can never carry write permissions even if that
-   * row is changed later — defense in depth on top of the role check already enforced by RBAC.
+   * Generate a short-lived access token for the public demo session (POST /api/demo/login).
+   * Role is forced to 'editor' in the payload regardless of the seeded user's DB role, as
+   * defense in depth — even if that row were ever changed, this token could never carry
+   * MANAGE_USERS/MANAGE_ROLES/VIEW_AUDIT_LOGS permissions. The demo account can still decide
+   * any approval alçada despite being 'editor': KnowledgeService.decideApproval bypasses the
+   * approval_group restriction for any company flagged is_demo, not based on role.
    */
   static generateDemoAccessToken(user: User): string {
     const payload: JWTPayload = {
       sub: user.id,
       companyId: user.company_id,
       email: user.email,
-      role: 'viewer',
+      role: 'editor',
       isMaster: false,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 4 * 60 * 60, // 4 hours

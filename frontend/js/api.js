@@ -9,9 +9,10 @@ const API = {
     getUser()  { try { return JSON.parse(localStorage.getItem('grc_user') || 'null'); } catch { return null; } },
 
     logout() {
+        const isDemo = !!this.getUser()?.isDemo;
         localStorage.removeItem('grc_token');
         localStorage.removeItem('grc_user');
-        window.location.href = '/login.html';
+        window.location.href = isDemo ? '/landing.html' : '/login.html';
     },
 
     requireAuth() {
@@ -166,7 +167,7 @@ const API = {
         const banner = document.createElement('div');
         banner.id = 'demo-banner';
         banner.style.cssText = 'position:sticky;top:0;z-index:101;background:#ffc107;color:#212529;text-align:center;padding:0.5rem 1rem;font-size:0.875rem;font-weight:500;';
-        banner.textContent = '🔍 Modo demonstração — dados fictícios, somente leitura.';
+        banner.textContent = '🔍 Modo demonstração — dados fictícios, fique à vontade para testar.';
         document.body.insertBefore(banner, document.body.firstChild);
     },
 

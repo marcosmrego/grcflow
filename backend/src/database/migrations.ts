@@ -555,14 +555,20 @@ if (process.env.SEED_PLATFORM_ADMIN_PASSWORD) {
   console.warn('[seed] SEED_PLATFORM_ADMIN_PASSWORD não definida — admin de plataforma inicial não será criado.');
 }
 
-// Usuário de acesso à demonstração pública (landing page), vinculado à Empresa Demo com
-// role viewer (somente leitura). A senha é gerada aleatoriamente e descartada em seguida —
-// POST /api/demo/login nunca verifica senha, o hash só existe pra satisfazer a coluna NOT
-// NULL. Diferente dos admins acima, não depende de env var porque não há segredo real aqui.
+// Usuário de acesso à demonstração pública (landing page), vinculado à Empresa Demo com role
+// 'editor' (cria/edita conteúdo, mas não gerencia usuários/roles). A senha é gerada
+// aleatoriamente e descartada em seguida — POST /api/demo/login nunca verifica senha, o hash
+// só existe pra satisfazer a coluna NOT NULL. Diferente dos admins acima, não depende de env
+// var porque não há segredo real aqui.
+//
+// Decidir qualquer alçada de aprovação (não só a do seu approval_group) é liberado em
+// KnowledgeService.decideApproval pela flag companies.is_demo, não por um role especial nessa
+// linha — o usuário demo nunca precisa (e nunca deve) ter role 'admin' de verdade no banco,
+// já que esse endpoint é público e sem credenciais.
 migrations.push(`
   INSERT INTO users (email, name, password_hash, role, is_active, company_id)
   SELECT 'demo@grcflow.local', 'Visitante Demo', '${bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10)}',
-         'viewer', TRUE, (SELECT id FROM companies WHERE name = 'Empresa Demo' LIMIT 1)
+         'editor', TRUE, (SELECT id FROM companies WHERE name = 'Empresa Demo' LIMIT 1)
   WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'demo@grcflow.local');
 `);
 

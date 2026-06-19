@@ -13,8 +13,10 @@ interface DemoLoginResponse {
 
 /**
  * Demo Service
- * Issues short-lived, read-only access to the public demo company (Empresa Demo) for the
- * marketing landing page — no credentials involved, see POST /api/demo/login.
+ * Issues short-lived access to the public demo company (Empresa Demo) for the marketing
+ * landing page — no credentials involved, see POST /api/demo/login. The session can create
+ * and edit content and decide approval alçadas, but never manage users/roles (see
+ * AuthService.generateDemoAccessToken for how that's enforced).
  */
 export class DemoService {
   async login(): Promise<DemoLoginResponse> {
@@ -32,7 +34,7 @@ export class DemoService {
 
     return {
       token,
-      user: { ...AuthService.toUserPayload(user), role: 'viewer', isDemo: true },
+      user: { ...AuthService.toUserPayload(user), role: 'editor', isDemo: true },
     };
   }
 }

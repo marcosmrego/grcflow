@@ -1,5 +1,6 @@
 import { knowledgeRepository, APPROVAL_LEVELS } from '../repositories/KnowledgeRepository';
 import { userRepository } from '../repositories/UserRepository';
+import { companyRepository } from '../repositories/CompanyRepository';
 import { ApprovalDecision, KnowledgeItem, KnowledgeItemApproval, KnowledgeItemVersion, KnowledgeStats, UserRole } from '../models/types';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../middleware/errorHandler';
 
@@ -123,10 +124,16 @@ export class KnowledgeService {
     }
 
     // Só admin (acesso irrestrito) ou quem está no grupo de aprovação daquela alçada
-    // pode decidir essa etapa (RF004 — combinado com Thiago em 17/06/2026).
+    // pode decidir essa etapa (RF004 — combinado com Thiago em 17/06/2026). Na empresa de
+    // demonstração pública (is_demo) essa segregação não se aplica — é um sandbox, não um
+    // ambiente real, e o visitante precisa poder testar as 3 alçadas numa única conta.
     const decidingUser = await userRepository.findByIdInCompany(decidedBy, companyId);
     if (!decidingUser) throw new NotFoundError('User', decidedBy);
-    if (decidingUser.role !== 'admin' && decidingUser.approval_group !== approval.approverRole) {
+
+    const company = await companyRepository.findById(companyId);
+    const isDemoSandbox = !!company?.is_demo;
+
+    if (!isDemoSandbox && decidingUser.role !== 'admin' && decidingUser.approval_group !== approval.approverRole) {
       throw new AuthorizationError(
         `Apenas usuários do grupo de aprovação "${approval.approverRole}" podem decidir esta alçada.`
       );
