@@ -90,6 +90,44 @@
     font-size: 0.9rem;
 }
 
+/* Stats Mini Card (versão compacta, p/ header) */
+.stats-mini-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.6rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.stats-mini-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 56px;
+}
+
+.stats-mini-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stats-mini-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.stats-mini-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--border-color);
+}
+
 /* Content Grid */
 .content-grid {
     display: grid;

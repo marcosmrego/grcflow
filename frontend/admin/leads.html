@@ -6,6 +6,7 @@
     <title>Leads — Painel da Plataforma · GRC Flow</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
 </head>
 <body>
     <div class="container-fluid">
@@ -18,11 +19,18 @@
                 </div>
             </div>
             <ul class="nav-links">
-                <li><a href="companies.html" class="nav-link">Empresas</a></li>
-                <li><a href="leads.html" class="nav-link active">Leads</a></li>
-                <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
-                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
+                <li>
+                    <a href="companies.html" class="nav-link">🏢 Empresas</a>
+                    <ul class="nav-sublinks">
+                        <li><a href="companies.html" class="nav-sublink">+ Nova Empresa</a></li>
+                    </ul>
+                </li>
+                <li><a href="leads.html" class="nav-link active">📨 Leads</a></li>
             </ul>
+            <div class="navbar-footer">
+                <span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span>
+                <a href="#" class="nav-link" id="logout-link">🚪 Sair</a>
+            </div>
         </nav>
 
         <!-- Main Content -->

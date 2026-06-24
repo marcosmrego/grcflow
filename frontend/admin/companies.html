@@ -6,6 +6,7 @@
     <title>Empresas — Painel da Plataforma · GRC Flow</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
 </head>
 <body>
     <div class="container-fluid">
@@ -18,11 +19,18 @@
                 </div>
             </div>
             <ul class="nav-links">
-                <li><a href="companies.html" class="nav-link active">Empresas</a></li>
-                <li><a href="leads.html" class="nav-link">Leads</a></li>
-                <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
-                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
+                <li>
+                    <a href="companies.html" class="nav-link active">🏢 Empresas</a>
+                    <ul class="nav-sublinks">
+                        <li><a href="#" class="nav-sublink" id="btn-new-company">+ Nova Empresa</a></li>
+                    </ul>
+                </li>
+                <li><a href="leads.html" class="nav-link">📨 Leads</a></li>
             </ul>
+            <div class="navbar-footer">
+                <span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span>
+                <a href="#" class="nav-link" id="logout-link">🚪 Sair</a>
+            </div>
         </nav>
 
         <!-- Main Content -->
@@ -34,36 +42,24 @@
                     <p class="subtitle">Gerenciar empresas (tenants) cadastradas na plataforma</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-primary" id="btn-new-company">
-                        + Nova Empresa
-                    </button>
+                    <div class="stats-mini-card">
+                        <div class="stats-mini-item">
+                            <span class="stats-mini-value" id="stat-total">-</span>
+                            <span class="stats-mini-label">Total</span>
+                        </div>
+                        <div class="stats-mini-divider"></div>
+                        <div class="stats-mini-item">
+                            <span class="stats-mini-value" id="stat-active">-</span>
+                            <span class="stats-mini-label">Ativas</span>
+                        </div>
+                        <div class="stats-mini-divider"></div>
+                        <div class="stats-mini-item">
+                            <span class="stats-mini-value" id="stat-inactive">-</span>
+                            <span class="stats-mini-label">Inativas</span>
+                        </div>
+                    </div>
                 </div>
             </header>
-
-            <!-- KPIs -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon knowledge">🏢</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="stat-total">-</div>
-                        <div class="stat-label">Total de Empresas</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon published">✅</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="stat-active">-</div>
-                        <div class="stat-label">Ativas</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon draft">⛔</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="stat-inactive">-</div>
-                        <div class="stat-label">Inativas</div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Filter Bar -->
             <div class="card" style="margin-bottom: 2rem;">
