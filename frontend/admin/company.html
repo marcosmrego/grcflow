@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empresa — Painel da Plataforma · GRC Flow</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <div class="logo">
+                    <span class="logo-icon">🛠️</span>
+                    <span class="logo-text">GRC Flow — Painel da Plataforma</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li>
+                    <a href="companies.html" class="nav-link active">🏢 Empresas</a>
+                    <ul class="nav-sublinks">
+                        <li><a href="companies.html" class="nav-sublink">+ Nova Empresa</a></li>
+                    </ul>
+                </li>
+                <li><a href="leads.html" class="nav-link">📨 Leads</a></li>
+            </ul>
+            <div class="navbar-footer">
+                <span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span>
+                <a href="#" class="nav-link" id="logout-link">🚪 Sair</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div style="margin-bottom: 1rem;">
+                <a href="companies.html" class="nav-link" style="display:inline-flex; color:var(--primary);">← Voltar para Empresas</a>
+            </div>
+
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div>
+                    <h1 id="company-detail-title">🏢 Empresa</h1>
+                    <p class="subtitle" id="company-detail-subtitle">Carregando...</p>
+                </div>
+                <div class="header-actions" id="company-detail-status-badge"></div>
+            </header>
+
+            <div class="content-grid" style="grid-template-columns: 2fr 1fr; align-items: start;">
+                <!-- Dados da Empresa -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Dados da Empresa</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="company-detail-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="company-name">Nome *</label>
+                                    <input type="text" class="form-control" id="company-name" required
+                                           placeholder="Nome (fantasia) da empresa">
+                                </div>
+                                <div class="form-group">
+                                    <label for="company-legal-name">Razão Social</label>
+                                    <input type="text" class="form-control" id="company-legal-name"
+                                           placeholder="Razão social">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="company-document">CNPJ / Documento</label>
+                                    <input type="text" class="form-control" id="company-document"
+                                           placeholder="00.000.000/0000-00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="company-segment">Segmento</label>
+                                    <input type="text" class="form-control" id="company-segment"
+                                           placeholder="Ex: Varejo, Saúde, Indústria">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="company-website">Site</label>
+                                <input type="text" class="form-control" id="company-website"
+                                       placeholder="https://empresa.com.br">
+                            </div>
+
+                            <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem; color: var(--text-secondary);">Contato</h3>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="company-contact-name">Nome do contato</label>
+                                    <input type="text" class="form-control" id="company-contact-name"
+                                           placeholder="Nome completo">
+                                </div>
+                                <div class="form-group">
+                                    <label for="company-contact-email">E-mail do contato</label>
+                                    <input type="email" class="form-control" id="company-contact-email"
+                                           placeholder="contato@empresa.com.br">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="company-contact-phone">Telefone / WhatsApp</label>
+                                <input type="text" class="form-control" id="company-contact-phone"
+                                       placeholder="(00) 00000-0000">
+                            </div>
+
+                            <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem; color: var(--text-secondary);">Endereço</h3>
+
+                            <div class="form-group">
+                                <label for="company-address">Endereço</label>
+                                <input type="text" class="form-control" id="company-address"
+                                       placeholder="Rua, número, complemento">
+                            </div>
+
+                            <div class="form-row-3">
+                                <div class="form-group">
+                                    <label for="company-city">Cidade</label>
+                                    <input type="text" class="form-control" id="company-city">
+                                </div>
+                                <div class="form-group">
+                                    <label for="company-state">UF</label>
+                                    <input type="text" class="form-control" id="company-state" maxlength="2" style="text-transform:uppercase;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="company-zip">CEP</label>
+                                    <input type="text" class="form-control" id="company-zip" placeholder="00000-000">
+                                </div>
+                            </div>
+
+                            <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem; color: var(--text-secondary);">Comercial</h3>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="company-monthly-fee">Mensalidade (R$)</label>
+                                    <input type="number" class="form-control" id="company-monthly-fee" min="0" step="0.01"
+                                           placeholder="Ainda não definido? deixe em branco">
+                                    <small style="color: var(--text-secondary);">Valor configurável manualmente — não há plano fixo ainda.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="company-active">Status</label>
+                                    <select class="form-control" id="company-active">
+                                        <option value="true">✅ Ativa</option>
+                                        <option value="false">⛔ Inativa</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="company-notes">Observações</label>
+                                <textarea class="form-control" id="company-notes" rows="2" placeholder="Observações internas"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" id="company-detail-save">Salvar Alterações</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Ações</h2>
+                    </div>
+                    <div class="card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+                        <button type="button" class="btn btn-secondary" id="btn-view-users" style="width:100%; justify-content:flex-start;">👥 Usuários</button>
+                        <button type="button" class="btn btn-secondary" id="btn-create-admin" style="width:100%; justify-content:flex-start;">👤 Criar Administrador</button>
+                        <button type="button" class="btn btn-secondary" id="btn-view-modules" style="width:100%; justify-content:flex-start;">🧩 Módulos</button>
+                        <button type="button" class="btn btn-secondary" id="btn-view-invoices" style="width:100%; justify-content:flex-start;">💰 Faturamento</button>
+                        <button type="button" class="btn btn-secondary" id="btn-toggle-active" style="width:100%; justify-content:flex-start;">⛔ Desativar Empresa</button>
+                        <button type="button" class="btn btn-danger" id="btn-delete-company" style="width:100%; justify-content:flex-start;">🗑️ Excluir Empresa</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Company Users Modal -->
+    <div id="company-users-modal" class="modal">
+        <div class="modal-content" style="max-width: 640px;">
+            <div class="modal-header">
+                <h2 id="users-modal-title">Usuários</h2>
+                <button class="modal-close" id="company-users-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;" id="users-modal-count"></p>
+                <div id="users-modal-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Modules Modal -->
+    <div id="company-modules-modal" class="modal">
+        <div class="modal-content" style="max-width: 560px;">
+            <div class="modal-header">
+                <h2 id="modules-modal-title">Módulos</h2>
+                <button class="modal-close" id="company-modules-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                    Módulos não ativos bloqueiam o acesso da empresa às respectivas áreas do sistema.
+                </p>
+                <div id="modules-modal-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Invoices (Faturamento) Modal -->
+    <div id="company-invoices-modal" class="modal">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header">
+                <h2 id="invoices-modal-title">Faturamento</h2>
+                <button class="modal-close" id="company-invoices-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="card-body">
+                        <form id="invoice-form">
+                            <div class="form-row-3">
+                                <div class="form-group">
+                                    <label for="invoice-reference-month">Mês de referência *</label>
+                                    <input type="month" class="form-control" id="invoice-reference-month" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="invoice-amount">Valor (R$) *</label>
+                                    <input type="number" class="form-control" id="invoice-amount" min="0" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="invoice-due-date">Vencimento *</label>
+                                    <input type="date" class="form-control" id="invoice-due-date" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">+ Nova Cobrança</button>
+                        </form>
+                    </div>
+                </div>
+                <div id="invoices-modal-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Company Admin Modal -->
+    <div id="company-admin-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="company-admin-modal-title">Criar Administrador</h2>
+                <button class="modal-close" id="company-admin-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="item-description" id="company-admin-modal-company" style="margin-bottom: 1rem;"></p>
+                <form id="company-admin-form">
+                    <div class="form-group">
+                        <label for="company-admin-name">Nome *</label>
+                        <input type="text" class="form-control" id="company-admin-name" required
+                               placeholder="Nome completo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company-admin-email">E-mail *</label>
+                        <input type="email" class="form-control" id="company-admin-email" required
+                               placeholder="admin@empresa.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company-admin-password">Senha *</label>
+                        <input type="password" class="form-control" id="company-admin-password" required
+                               placeholder="Mínimo de 8 caracteres">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="company-admin-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="company-admin-modal-save">Criar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/admin-api.js"></script>
+    <script src="../js/admin-company-detail.js"></script>
+</body>
+</html>
