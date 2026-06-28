@@ -15,6 +15,8 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /frontend
 
+ENV NODE_ENV=development
+
 COPY frontend-react/package*.json ./
 RUN npm ci
 
