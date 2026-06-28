@@ -65,6 +65,12 @@ app.use('/api/system/users', systemUsersRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/leads', leadsRoutes);
 
+// SPA catch-all — serve index.html para rotas do React Router
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/') || req.path === '/health') return next();
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 

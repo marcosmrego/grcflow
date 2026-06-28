@@ -1,30 +1,35 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine AS backend-builder
 
 WORKDIR /app
 
-# Forçar development no build para que npm ci instale devDependencies (TypeScript)
 ENV NODE_ENV=development
 
-# Instalar dependências
 COPY backend/package*.json ./
 RUN npm ci
 
-# Compilar TypeScript
 COPY backend/ ./
 RUN npm run build
 
-# Copiar frontend como arquivos estáticos
-COPY frontend/ ./public/
+# ---- Build React frontend ----
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+COPY frontend-react/package*.json ./
+RUN npm ci
+
+COPY frontend-react/ ./
+RUN npm run build
 
 # ---- Imagem final ----
 FROM node:22-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/dist        ./dist
-COPY --from=builder /app/public      ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+COPY --from=backend-builder /app/dist        ./dist
+COPY --from=backend-builder /app/node_modules ./node_modules
+COPY --from=backend-builder /app/package.json ./
+COPY --from=frontend-builder /frontend/dist  ./public
 
 EXPOSE 3000
 
