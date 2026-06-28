@@ -1,0 +1,118 @@
+﻿/* ===========================
+   Painel da Plataforma (Admin) â€” Menu lateral
+   Sobrescreve apenas as paginas que carregam este arquivo
+   (nÃ£o afeta o app principal, que mantÃ©m o menu no topo)
+   =========================== */
+
+.container-fluid {
+    flex-direction: row;
+}
+
+.navbar {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 240px;
+    flex-shrink: 0;
+    height: 100vh;
+    padding: 1.5rem 1rem;
+    border-bottom: none;
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+}
+
+.navbar-brand {
+    margin-bottom: 2rem;
+}
+
+.navbar .logo {
+    flex-wrap: wrap;
+    font-size: 1.1rem;
+}
+
+.navbar .nav-links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+}
+
+.navbar .nav-link {
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--border-radius);
+}
+
+.navbar .nav-link:hover {
+    background-color: var(--bg-secondary);
+}
+
+.navbar .nav-link.active {
+    background-color: var(--bg-secondary);
+    border-bottom: none;
+    border-left: 3px solid var(--primary);
+    padding-left: calc(0.75rem - 3px);
+}
+
+.navbar .nav-sublinks {
+    display: none;
+    flex-direction: column;
+    list-style: none;
+    gap: 0.15rem;
+    margin: 0.15rem 0 0.4rem;
+    padding-left: 1.25rem;
+}
+
+.navbar .nav-link.active + .nav-sublinks {
+    display: flex;
+}
+
+.navbar .nav-sublink {
+    display: block;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.navbar .nav-sublink:hover {
+    background-color: var(--bg-secondary);
+    color: var(--primary);
+}
+
+.navbar-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        flex-direction: column;
+    }
+
+    .navbar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .navbar .nav-links {
+        flex-direction: row;
+    }
+
+    .navbar-footer {
+        margin-top: 0;
+        flex-direction: row;
+        border-top: none;
+        padding-top: 0;
+    }
+}
+
