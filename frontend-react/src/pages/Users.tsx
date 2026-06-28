@@ -54,7 +54,7 @@ export function Users() {
     queryFn: () => getUsers(),
   })
 
-  const users = (usersRes?.data ?? []).filter((u) => {
+  const users = (usersRes?.data?.items ?? []).filter((u) => {
     if (filterRole && u.role !== filterRole) return false
     if (search && !u.name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false
     return true

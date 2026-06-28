@@ -52,7 +52,7 @@ export function Flows() {
     queryFn: () => getFlows(statusFilter || undefined),
   })
 
-  const flows = (flowsRes?.data ?? []).filter((f) =>
+  const flows = (flowsRes ?? []).filter((f) =>
     !search || f.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -74,7 +74,7 @@ export function Flows() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Flow> }) => updateFlow(id, data),
-    onSuccess: (res) => { qc.invalidateQueries({ queryKey: ['flows'] }); setDetailFlow(res.data); closeModal() },
+    onSuccess: (res) => { qc.invalidateQueries({ queryKey: ['flows'] }); setDetailFlow(res); closeModal() },
     onError: (err: Error) => setFormError(err.message),
   })
 
@@ -88,7 +88,7 @@ export function Flows() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['flows'] })
       if (detailFlow) {
-        setDetailFlow({ ...detailFlow, steps: [...detailFlow.steps, res.data] })
+        setDetailFlow({ ...detailFlow, steps: [...detailFlow.steps, res] })
       }
       resetStep()
       setAddingStep(false)

@@ -57,15 +57,15 @@ export function Knowledge() {
     queryFn: () => debouncedSearch ? searchKnowledge(debouncedSearch) : getKnowledge({ limit: 100 }),
   })
 
-  const items = (kbRes?.data ?? []).filter((item) => {
+  const items = (kbRes ?? []).filter((item) => {
     if (filterStatus && item.status !== filterStatus) return false
     if (filterCategory && item.category !== filterCategory) return false
     return true
   })
 
-  const categories = Array.from(new Set((kbRes?.data ?? []).map((i) => i.category).filter(Boolean)))
-  const stats = statsRes?.data
-  const towers = towersRes?.data ?? []
+  const categories = Array.from(new Set((kbRes ?? []).map((i) => i.category).filter(Boolean)))
+  const stats = statsRes
+  const towers = towersRes ?? []
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),

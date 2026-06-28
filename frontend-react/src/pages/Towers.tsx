@@ -33,7 +33,7 @@ export function Towers() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const { data: towersRes, isLoading } = useQuery({ queryKey: ['towers'], queryFn: getTowers })
-  const towers = towersRes?.data ?? []
+  const towers = towersRes ?? []
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema)

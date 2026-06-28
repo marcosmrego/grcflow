@@ -31,12 +31,12 @@ export function Dashboard() {
     queryFn: () => getFlows(),
   })
 
-  const stats = statsRes?.data
-  const recentKb = knowledgeRes?.data?.slice(0, 5) ?? []
-  const recentFlows = (flowsRes?.data ?? []).slice(0, 5)
-  const totalFlows = flowsRes?.data?.length ?? 0
-  const publishedFlows = flowsRes?.data?.filter((f) => f.status === 'published').length ?? 0
-  const draftFlows = flowsRes?.data?.filter((f) => f.status === 'draft').length ?? 0
+  const stats = statsRes
+  const recentKb = (knowledgeRes ?? []).slice(0, 5)
+  const recentFlows = (flowsRes ?? []).slice(0, 5)
+  const totalFlows = (flowsRes ?? []).length
+  const publishedFlows = (flowsRes ?? []).filter((f) => f.status === 'published').length
+  const draftFlows = (flowsRes ?? []).filter((f) => f.status === 'draft').length
 
   return (
     <div>
