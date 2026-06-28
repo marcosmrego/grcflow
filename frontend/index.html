@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GRC Flow - Knowledge Base & Process Flows</title>
+    <script src="js/theme.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/app-sidebar.css">
+    <link rel="stylesheet" href="css/dark-theme.css">
 </head>
 <body>
     <div class="container-fluid">
@@ -18,19 +21,22 @@
                 </div>
             </div>
             <ul class="nav-links">
-                <li><a href="index.html" class="nav-link active">Dashboard</a></li>
-                <li><a href="pages/knowledge.html" class="nav-link">Base de Conhecimento</a></li>
-                <li><a href="pages/flows.html" class="nav-link">Fluxos de Processos</a></li>
-                <li id="nav-users-item" style="display:none"><a href="pages/users.html" class="nav-link">Usuários</a></li>
-                <li id="nav-towers-item" style="display:none"><a href="pages/towers.html" class="nav-link">Torres</a></li>
-                <li><a href="#" class="nav-link status-indicator">
+                <li><a href="index.html" class="nav-link active"><span class="nav-icon">📊</span> Dashboard</a></li>
+                <li><a href="pages/knowledge.html" class="nav-link"><span class="nav-icon">📚</span> Base de Conhecimento</a></li>
+                <li><a href="pages/flows.html" class="nav-link"><span class="nav-icon">🔄</span> Fluxos</a></li>
+                <li id="nav-users-item" style="display:none"><a href="pages/users.html" class="nav-link"><span class="nav-icon">👥</span> Usuários</a></li>
+                <li id="nav-towers-item" style="display:none"><a href="pages/towers.html" class="nav-link"><span class="nav-icon">🏢</span> Torres</a></li>
+                <li><a href="pages/configuracoes.html" class="nav-link"><span class="nav-icon">🔧</span> Configurações</a></li>
+            </ul>
+            <div class="navbar-footer">
+                <a href="#" class="nav-link status-indicator">
                     <span class="dot online"></span>
                     <span id="api-status">Conectando...</span>
-                </a></li>
-                <li><a href="#" class="nav-link" id="system-info-btn" title="Informações do sistema">ℹ️</a></li>
-                <li><span class="nav-link" style="color:var(--text-muted);cursor:default" id="user-info"></span></li>
-                <li><a href="#" class="nav-link" id="logout-link">Sair</a></li>
-            </ul>
+                </a>
+                <a href="#" class="nav-link" id="system-info-btn">ℹ️ Sistema</a>
+                <span id="user-info"></span>
+                <a href="#" class="nav-link" id="logout-link">🚪 Sair</a>
+            </div>
         </nav>
 
         <!-- Main Content -->

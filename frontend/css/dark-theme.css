@@ -1,0 +1,349 @@
+/* ===========================
+   GRC Flow — Dark Theme
+   Ativado via [data-theme="dark"] no <html>
+   Fiel aos design assets: fundo escuro, cards brancos como ilhas
+   =========================== */
+
+/* ------ Fundo geral ------ */
+[data-theme="dark"] body {
+  background-color: #0f0f0f;
+  color: #efefef;
+}
+
+[data-theme="dark"] .main-content {
+  background-color: #0f0f0f;
+}
+
+/* ------ Dashboard header (texto sobre fundo escuro) ------ */
+[data-theme="dark"] .dashboard-header {
+  border-bottom-color: #1e1e1e;
+}
+
+[data-theme="dark"] .dashboard-header h1 {
+  color: #f0f0f0;
+}
+
+[data-theme="dark"] .dashboard-header .subtitle {
+  color: #666;
+}
+
+/* ------ Cards: mantêm fundo branco (contraste com escuro) ------ */
+[data-theme="dark"] .card {
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ------ Stat cards: brancos com dark gradient diagonal (como nos assets) ------ */
+[data-theme="dark"] .stat-card {
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: linear-gradient(
+    135deg,
+    rgba(13, 13, 13, 0.88) 0%,
+    rgba(25, 25, 25, 0.55) 35%,
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="dark"] .stat-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .stat-icon {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ------ Botões: dark depth pills ------ */
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, #1d4a80 0%, #0d3060 100%);
+  border: 1px solid rgba(30, 100, 200, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 3px 12px rgba(0, 80, 200, 0.35);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: linear-gradient(135deg, #235a95 0%, #10386e 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 5px 16px rgba(0, 80, 200, 0.45);
+}
+
+[data-theme="dark"] .btn-success {
+  background: linear-gradient(135deg, #1a5c30 0%, #0d3e20 100%);
+  border: 1px solid rgba(30, 120, 60, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 100, 50, 0.3);
+}
+
+[data-theme="dark"] .btn-success:hover {
+  background: linear-gradient(135deg, #206c38 0%, #104b28 100%);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background: #333;
+}
+
+[data-theme="dark"] .btn-danger {
+  background: linear-gradient(135deg, #7a1d1d 0%, #5a0d0d 100%);
+  border: 1px solid rgba(200, 30, 30, 0.35);
+}
+
+[data-theme="dark"] .btn-outline {
+  border-color: #3a3a3a;
+  color: #bbb;
+  background: transparent;
+}
+
+[data-theme="dark"] .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #555;
+}
+
+[data-theme="dark"] .btn-sm {
+  font-size: 0.875rem;
+}
+
+/* ------ Modais: escuros no dark mode ------ */
+[data-theme="dark"] .modal-content {
+  background-color: #1c1c1c;
+  border: 1px solid #2c2c2c;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom-color: #2a2a2a;
+}
+
+[data-theme="dark"] .modal-header h2 {
+  color: #f0f0f0;
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top-color: #2a2a2a;
+}
+
+[data-theme="dark"] .modal-close {
+  color: #777;
+}
+
+[data-theme="dark"] .modal-close:hover {
+  color: #ccc;
+}
+
+/* Inputs dentro de modais escuros */
+[data-theme="dark"] .modal-content .form-control {
+  background-color: #252525;
+  border-color: #353535;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-content .form-control:focus {
+  background-color: #2c2c2c;
+  color: #fff;
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .modal-content .form-control::placeholder {
+  color: #555;
+}
+
+[data-theme="dark"] .modal-content select.form-control option {
+  background: #252525;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-content .form-group label {
+  color: #bbb;
+}
+
+[data-theme="dark"] .modal-content h3 {
+  color: #999;
+}
+
+/* Tabs no modal */
+[data-theme="dark"] .kb-tabs {
+  border-bottom-color: #2a2a2a;
+}
+
+[data-theme="dark"] .kb-tab {
+  color: #555;
+}
+
+[data-theme="dark"] .kb-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* Quill editor no modal */
+[data-theme="dark"] .modal-content .kb-editor .ql-toolbar {
+  background-color: #222;
+  border-color: #333;
+}
+
+[data-theme="dark"] .modal-content .kb-editor .ql-container {
+  border-color: #333;
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-content .kb-editor .ql-editor {
+  color: #e0e0e0;
+}
+
+/* Approval / version rows dentro do modal */
+[data-theme="dark"] .approval-step,
+[data-theme="dark"] .version-row {
+  border-color: #2a2a2a;
+  color: #ccc;
+}
+
+/* ------ Badges de status (ajuste geral) ------ */
+[data-theme="dark"] .status-draft {
+  background-color: rgba(255, 193, 7, 0.12);
+  color: #ffc107;
+}
+
+[data-theme="dark"] .status-published {
+  background-color: rgba(40, 167, 69, 0.12);
+  color: #28a745;
+}
+
+[data-theme="dark"] .status-archived {
+  background-color: rgba(108, 117, 125, 0.18);
+  color: #999;
+}
+
+[data-theme="dark"] .status-in_review {
+  background-color: rgba(0, 123, 255, 0.12);
+  color: #5b9dff;
+}
+
+[data-theme="dark"] .status-pending_approval {
+  background-color: rgba(255, 140, 0, 0.12);
+  color: #ffa040;
+}
+
+[data-theme="dark"] .status-expired {
+  background-color: rgba(220, 53, 69, 0.12);
+  color: #ff6b7a;
+}
+
+/* ------ Página de Configurações ------ */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 600px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.setting-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.setting-desc {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+}
+
+/* Toggle de tema: dois botões pill */
+.theme-toggle-pills {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 50px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.theme-pill {
+  padding: 0.45rem 1.1rem;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.theme-pill.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .theme-toggle-pills {
+  background: #1a1a1a;
+}
+
+[data-theme="dark"] .theme-pill {
+  color: #555;
+}
+
+[data-theme="dark"] .theme-pill.active {
+  background: #2a2a2a;
+  color: #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Seção de info na página de configurações */
+.settings-info-card {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border-left: 3px solid var(--primary);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .settings-info-card {
+  background: #1a1a1a;
+  border-left-color: #b8860b;
+  color: #777;
+}
