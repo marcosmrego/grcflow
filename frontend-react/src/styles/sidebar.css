@@ -186,8 +186,9 @@
 .navbar-footer #user-info {
   display: block;
   padding: 0.4rem 1.5rem;
-  font-size: 0.78rem;
-  color: #3a3a3a;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ffffff;
   cursor: default;
   white-space: nowrap;
   overflow: hidden;
@@ -199,7 +200,7 @@
 
 .navbar-footer #user-info:hover {
   background: none;
-  color: #3a3a3a;
+  color: #ffffff;
 }
 
 /* ------ Card headers com gradiente escuro ------ */
