@@ -30,7 +30,7 @@ export function Login() {
     setError(null)
     try {
       const result = await login(data.email, data.password)
-      authLogin(result.accessToken, result.user)
+      authLogin(result.token, result.user)
       navigate('/', { replace: true })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha ao fazer login')

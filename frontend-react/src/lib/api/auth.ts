@@ -3,7 +3,7 @@
 interface LoginResponse {
   success: boolean
   data: {
-    accessToken: string
+    token: string
     refreshToken?: string
     user: User
   }
