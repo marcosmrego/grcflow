@@ -51,10 +51,10 @@ services:
       - grc-network
     command: npm run dev
 
-  # Frontend
+  # Frontend (React + Vite)
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend-react
       dockerfile: Dockerfile
     container_name: grc-flow-frontend
     environment:
@@ -65,8 +65,8 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/node_modules:/app/node_modules
+      - ./frontend-react/src:/app/src
+      - ./frontend-react/node_modules:/app/node_modules
     networks:
       - grc-network
 
