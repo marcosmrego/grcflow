@@ -15,6 +15,7 @@ import systemAuthRoutes from './routes/systemAuth';
 import systemUsersRoutes from './routes/systemUsers';
 import demoRoutes from './routes/demo';
 import leadsRoutes from './routes/leads';
+import billingRoutes from './routes/billing';
 import {
   auditContextMiddleware,
   generalLimiter,
@@ -64,6 +65,7 @@ app.use('/api/system/auth', systemAuthRoutes);
 app.use('/api/system/users', systemUsersRoutes);
 app.use('/api/demo', demoRoutes);
 app.use('/api/leads', leadsRoutes);
+app.use('/api/system/billing', billingRoutes);
 
 // SPA catch-all — serve index.html para rotas do React Router
 app.get('*', (req, res, next) => {

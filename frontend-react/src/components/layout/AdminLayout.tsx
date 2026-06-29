@@ -25,11 +25,13 @@ export function AdminLayout() {
   const adminUser = (() => {
     try {
       const raw = localStorage.getItem('grc_system_user')
-      return raw ? JSON.parse(raw) as { name?: string; email?: string } : null
+      return raw ? JSON.parse(raw) as { name?: string; email?: string; isMaster?: boolean } : null
     } catch {
       return null
     }
   })()
+
+  const isMaster = adminUser?.isMaster === true
 
   return (
     <div className="container-fluid">
@@ -53,6 +55,14 @@ export function AdminLayout() {
               Leads
             </NavLink>
           </li>
+          {isMaster && (
+            <li>
+              <NavLink to="/admin/billing" className={navClass}>
+                <span className="nav-icon">💰</span>
+                Faturamento
+              </NavLink>
+            </li>
+          )}
         </ul>
         <div className="navbar-footer">
           <span id="user-info">{adminUser?.name ?? adminUser?.email ?? 'Admin'}</span>

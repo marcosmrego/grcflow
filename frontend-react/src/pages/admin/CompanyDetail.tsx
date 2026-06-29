@@ -23,7 +23,7 @@ export function CompanyDetail() {
   const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' })
   const [adminError, setAdminError] = useState<string | null>(null)
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
-  const [invoiceForm, setInvoiceForm] = useState({ amount: '', dueDate: '', description: '', status: 'pending' })
+  const [invoiceForm, setInvoiceForm] = useState({ referenceMonth: '', amount: '', dueDate: '', notes: '' })
   const [invoiceError, setInvoiceError] = useState<string | null>(null)
 
   const { data: company, isLoading: companyLoading } = useQuery({
@@ -63,7 +63,12 @@ export function CompanyDetail() {
   })
 
   const createInvoiceMutation = useMutation({
-    mutationFn: () => createCompanyInvoice(id!, { ...invoiceForm, amount: Number(invoiceForm.amount) } as never),
+    mutationFn: () => createCompanyInvoice(id!, {
+      referenceMonth: invoiceForm.referenceMonth + '-01',
+      amount: Number(invoiceForm.amount),
+      dueDate: invoiceForm.dueDate,
+      notes: invoiceForm.notes || undefined,
+    }),
     onSuccess: () => { setInvoiceModalOpen(false); qc.invalidateQueries({ queryKey: ['admin-company-invoices', id] }); setInvoiceError(null) },
     onError: (err: Error) => setInvoiceError(err.message),
   })
@@ -149,10 +154,10 @@ export function CompanyDetail() {
                 <tbody>
                   {(invoicesData ?? []).map((inv) => (
                     <tr key={inv.id}>
-                      <td>{inv.description ?? '—'}</td>
+                      <td>{inv.notes ?? '—'}</td>
                       <td>R$ {Number(inv.amount).toFixed(2)}</td>
                       <td>{formatDateShort(inv.dueDate)}</td>
-                      <td><Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'overdue' ? 'danger' : 'warning'}>{inv.status}</Badge></td>
+                      <td><Badge variant={inv.displayStatus === 'paid' ? 'success' : inv.displayStatus === 'overdue' ? 'danger' : 'warning'}>{inv.displayStatus}</Badge></td>
                       <td><Button size="sm" variant="danger" onClick={() => deleteInvoiceMutation.mutate(inv.id)}>Excluir</Button></td>
                     </tr>
                   ))}
@@ -188,18 +193,10 @@ export function CompanyDetail() {
         }
       >
         {invoiceError && <ErrorMessage message={invoiceError} onDismiss={() => setInvoiceError(null)} />}
-        <div className="form-group"><label>Valor (R$)</label><input type="number" className="form-control" value={invoiceForm.amount} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })} /></div>
-        <div className="form-group"><label>Vencimento</label><input type="date" className="form-control" value={invoiceForm.dueDate} onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })} /></div>
-        <div className="form-group"><label>Descrição</label><input className="form-control" value={invoiceForm.description} onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })} /></div>
-        <div className="form-group">
-          <label>Status</label>
-          <select className="form-control" value={invoiceForm.status} onChange={(e) => setInvoiceForm({ ...invoiceForm, status: e.target.value })}>
-            <option value="pending">Pendente</option>
-            <option value="paid">Pago</option>
-            <option value="overdue">Vencido</option>
-            <option value="cancelled">Cancelado</option>
-          </select>
-        </div>
+        <div className="form-group"><label>Mês de Referência *</label><input type="month" className="form-control" value={invoiceForm.referenceMonth} onChange={(e) => setInvoiceForm({ ...invoiceForm, referenceMonth: e.target.value })} /></div>
+        <div className="form-group"><label>Valor (R$) *</label><input type="number" step="0.01" min="0" className="form-control" value={invoiceForm.amount} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })} /></div>
+        <div className="form-group"><label>Vencimento *</label><input type="date" className="form-control" value={invoiceForm.dueDate} onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })} /></div>
+        <div className="form-group"><label>Observações</label><input className="form-control" value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} /></div>
       </Modal>
     </div>
   )

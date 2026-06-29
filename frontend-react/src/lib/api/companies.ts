@@ -1,5 +1,5 @@
 ﻿import { adminApiRequest } from './client'
-import type { Company, Invoice, User } from '../../types'
+import type { BillingInvoice, BillingOverview, Company, Invoice, User } from '../../types'
 
 type RawCompany = Omit<Company, 'isActive' | 'createdAt' | 'slug'> & { is_active: boolean; created_at: string; slug?: string }
 
@@ -57,12 +57,45 @@ export async function getCompanyInvoices(companyId: string): Promise<Invoice[]> 
   return adminApiRequest(`/companies/${companyId}/invoices`)
 }
 
-export async function createCompanyInvoice(companyId: string, data: Partial<Invoice>): Promise<Invoice> {
+export async function createCompanyInvoice(
+  companyId: string,
+  data: { referenceMonth: string; amount: number; dueDate: string; notes?: string }
+): Promise<Invoice> {
   return adminApiRequest(`/companies/${companyId}/invoices`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function updateCompanyInvoice(companyId: string, invoiceId: string, data: Partial<Invoice>): Promise<Invoice> {
+export async function updateCompanyInvoice(
+  companyId: string,
+  invoiceId: string,
+  data: { status?: 'pending' | 'paid' | 'cancelled'; amount?: number; dueDate?: string; notes?: string }
+): Promise<Invoice> {
   return adminApiRequest(`/companies/${companyId}/invoices/${invoiceId}`, { method: 'PUT', body: JSON.stringify(data) })
+}
+
+export async function getBillingOverview(): Promise<BillingOverview> {
+  return adminApiRequest('/system/billing/overview')
+}
+
+export async function getBillingInvoices(params?: {
+  status?: string
+  companyId?: string
+  page?: number
+  limit?: number
+}): Promise<{ items: BillingInvoice[]; pagination: { total: number; page: number; limit: number; pages: number } }> {
+  const q = new URLSearchParams()
+  if (params?.status) q.set('status', params.status)
+  if (params?.companyId) q.set('companyId', params.companyId)
+  if (params?.page) q.set('page', String(params.page))
+  if (params?.limit) q.set('limit', String(params.limit))
+  const qs = q.toString() ? `?${q.toString()}` : ''
+  return adminApiRequest(`/system/billing/invoices${qs}`)
+}
+
+export async function generateMonthlyInvoice(companyId: string, referenceMonth?: string): Promise<Invoice> {
+  return adminApiRequest(`/system/billing/companies/${companyId}/invoices/generate`, {
+    method: 'POST',
+    body: JSON.stringify(referenceMonth ? { referenceMonth } : {}),
+  })
 }
 
 export async function deleteCompanyInvoice(companyId: string, invoiceId: string): Promise<void> {

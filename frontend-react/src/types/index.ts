@@ -118,11 +118,26 @@ export interface Lead {
 export interface Invoice {
   id: string
   companyId: string
+  referenceMonth: string
   amount: number
   dueDate: string
-  status: 'pending' | 'paid' | 'overdue' | 'cancelled'
-  description?: string
+  status: 'pending' | 'paid' | 'cancelled'
+  displayStatus: 'pending' | 'paid' | 'cancelled' | 'overdue'
+  paidAt?: string | null
+  notes?: string | null
   createdAt: string
+}
+
+export interface BillingInvoice extends Invoice {
+  companyName: string
+}
+
+export interface BillingOverview {
+  mrr: number
+  pendingAmount: number
+  overdueAmount: number
+  overdueCount: number
+  upcomingCount: number
 }
 
 export interface SystemAdmin {

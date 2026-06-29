@@ -17,6 +17,7 @@ const AdminLogin = lazy(() => import('./pages/admin/AdminLogin').then((m) => ({ 
 const Companies = lazy(() => import('./pages/admin/Companies').then((m) => ({ default: m.Companies })))
 const CompanyDetail = lazy(() => import('./pages/admin/CompanyDetail').then((m) => ({ default: m.CompanyDetail })))
 const Leads = lazy(() => import('./pages/admin/Leads').then((m) => ({ default: m.Leads })))
+const Billing = lazy(() => import('./pages/admin/Billing').then((m) => ({ default: m.Billing })))
 
 function PageLoader() {
   return (
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
       { path: 'companies',      element: withSuspense(<Companies />) },
       { path: 'companies/:id',  element: withSuspense(<CompanyDetail />) },
       { path: 'leads',          element: withSuspense(<Leads />) },
+      { path: 'billing',        element: withSuspense(<Billing />) },
     ],
   },
 
