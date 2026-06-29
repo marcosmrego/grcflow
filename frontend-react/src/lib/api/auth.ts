@@ -28,13 +28,14 @@ interface AdminLoginResponse {
   success: boolean
   data: {
     token: string
-    admin: { id: string; name: string; email: string; role: string }
+    refreshToken?: string
+    user: { id: string; name: string; email: string; role: string; isMaster: boolean }
   }
 }
 
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResponse['data']> {
   const API_BASE = import.meta.env.VITE_API_URL ?? ''
-  const res = await fetch(`${API_BASE}/api/auth/admin-login`, {
+  const res = await fetch(`${API_BASE}/api/system/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })

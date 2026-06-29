@@ -28,7 +28,7 @@ export function AdminLogin() {
     try {
       const result = await adminLogin(data.email, data.password)
       localStorage.setItem('grc_system_token', result.token)
-      localStorage.setItem('grc_system_user', JSON.stringify(result.admin))
+      localStorage.setItem('grc_system_user', JSON.stringify(result.user))
       navigate('/admin/companies', { replace: true })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha no login')
