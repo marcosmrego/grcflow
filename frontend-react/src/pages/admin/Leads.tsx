@@ -22,7 +22,7 @@ export function Leads() {
     queryFn: () => getLeads(1, 100, search),
   })
 
-  const leads = leadsRes?.data ?? []
+  const leads = leadsRes?.items ?? []
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteLead(id),

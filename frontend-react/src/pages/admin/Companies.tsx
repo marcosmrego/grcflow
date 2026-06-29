@@ -36,7 +36,7 @@ export function Companies() {
     queryFn: () => getCompanies(1, 50, search),
   })
 
-  const companies = companiesRes?.data ?? []
+  const companies = companiesRes?.items ?? []
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({ resolver: zodResolver(schema) })
 

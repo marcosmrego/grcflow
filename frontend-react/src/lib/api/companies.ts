@@ -1,7 +1,7 @@
 ﻿import { adminApiRequest } from './client'
 import type { Company, Invoice, User } from '../../types'
 
-export async function getCompanies(page = 1, limit = 50, search = ''): Promise<{ data: Company[]; total: number }> {
+export async function getCompanies(page = 1, limit = 50, search = ''): Promise<{ items: Company[]; pagination: { total: number; page: number; pages: number; limit: number } }> {
   const s = search ? `&search=${encodeURIComponent(search)}` : ''
   return adminApiRequest(`/companies?page=${page}&limit=${limit}${s}`)
 }
@@ -54,7 +54,7 @@ export async function deleteCompanyInvoice(companyId: string, invoiceId: string)
   return adminApiRequest(`/companies/${companyId}/invoices/${invoiceId}`, { method: 'DELETE' })
 }
 
-export async function getLeads(page = 1, limit = 50, search = ''): Promise<{ data: Array<{ id: string; name: string; email: string; company?: string; message?: string; createdAt: string }>; total: number }> {
+export async function getLeads(page = 1, limit = 50, search = ''): Promise<{ items: Array<{ id: string; name: string; email: string; company?: string; message?: string; createdAt: string }>; pagination: { total: number; page: number; pages: number; limit: number } }> {
   const s = search ? `&search=${encodeURIComponent(search)}` : ''
   return adminApiRequest(`/leads?page=${page}&limit=${limit}${s}`)
 }
