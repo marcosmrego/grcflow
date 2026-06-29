@@ -1,10 +1,34 @@
 ﻿import { adminApiRequest } from './client'
 import type { BillingInvoice, BillingOverview, Company, Invoice, User } from '../../types'
 
-type RawCompany = Omit<Company, 'isActive' | 'createdAt' | 'slug'> & { is_active: boolean; created_at: string; slug?: string }
+type RawCompany = Omit<
+  Company,
+  'isActive' | 'createdAt' | 'slug' | 'legalName' | 'contactName' | 'contactEmail' | 'contactPhone' | 'zipCode' | 'monthlyFee'
+> & {
+  is_active: boolean
+  created_at: string
+  slug?: string
+  legal_name?: string | null
+  contact_name?: string | null
+  contact_email?: string | null
+  contact_phone?: string | null
+  zip_code?: string | null
+  monthly_fee?: number | null
+}
 
 function normalizeCompany(raw: RawCompany): Company {
-  return { ...raw, slug: raw.slug ?? '', isActive: raw.is_active, createdAt: raw.created_at }
+  return {
+    ...raw,
+    slug: raw.slug ?? '',
+    isActive: raw.is_active,
+    createdAt: raw.created_at,
+    legalName: raw.legal_name ?? null,
+    contactName: raw.contact_name ?? null,
+    contactEmail: raw.contact_email ?? null,
+    contactPhone: raw.contact_phone ?? null,
+    zipCode: raw.zip_code ?? null,
+    monthlyFee: raw.monthly_fee ?? null,
+  }
 }
 
 export async function getCompanies(page = 1, limit = 50, search = ''): Promise<{ items: Company[]; pagination: { total: number; page: number; pages: number; limit: number } }> {
@@ -22,8 +46,27 @@ export async function createCompany(data: { name: string; slug: string }): Promi
   return adminApiRequest('/companies', { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function updateCompany(id: string, data: Partial<Company>): Promise<Company> {
-  return adminApiRequest(`/companies/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+type CompanyUpdatePayload = {
+  name?: string
+  document?: string
+  is_active?: boolean
+  legalName?: string
+  segment?: string
+  website?: string
+  contactName?: string
+  contactEmail?: string
+  contactPhone?: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  monthlyFee?: number | null
+  notes?: string
+}
+
+export async function updateCompany(id: string, data: CompanyUpdatePayload): Promise<Company> {
+  const raw = await adminApiRequest<RawCompany>(`/companies/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  return normalizeCompany(raw)
 }
 
 export async function deleteCompany(id: string): Promise<void> {

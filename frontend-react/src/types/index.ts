@@ -24,6 +24,19 @@ export interface Company {
   isActive: boolean
   modules: Module[]
   createdAt: string
+  document?: string | null
+  legalName?: string | null
+  segment?: string | null
+  website?: string | null
+  contactName?: string | null
+  contactEmail?: string | null
+  contactPhone?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zipCode?: string | null
+  monthlyFee?: number | null
+  notes?: string | null
 }
 
 export interface Module {
