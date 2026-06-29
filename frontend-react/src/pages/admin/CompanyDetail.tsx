@@ -404,7 +404,17 @@ export function CompanyDetail() {
       {/* ─── ABA FATURAS ─── */}
       {activeTab === 'invoices' && (
         <Card>
-          <CardHeader title="Faturas" action={<Button size="sm" onClick={() => setInvoiceModalOpen(true)}>+ Nova Fatura</Button>} />
+          <CardHeader title="Faturas" action={
+            <Button size="sm" onClick={() => {
+              setInvoiceForm({
+                referenceMonth: '',
+                amount: company.monthlyFee != null ? String(company.monthlyFee) : '',
+                dueDate: '',
+                notes: '',
+              })
+              setInvoiceModalOpen(true)
+            }}>+ Nova Fatura</Button>
+          } />
           <CardBody>
             {invoicesLoading ? <LoadingSpinner /> : (
               <table className="table">
@@ -451,9 +461,35 @@ export function CompanyDetail() {
         }
       >
         {invoiceError && <ErrorMessage message={invoiceError} onDismiss={() => setInvoiceError(null)} />}
-        <div className="form-group"><label>Mês de Referência *</label><input type="month" className="form-control" value={invoiceForm.referenceMonth} onChange={(e) => setInvoiceForm({ ...invoiceForm, referenceMonth: e.target.value })} /></div>
+        <div className="form-group">
+          <label>Mês de Referência *</label>
+          <input
+            type="month"
+            className="form-control"
+            value={invoiceForm.referenceMonth}
+            onChange={(e) => {
+              const month = e.target.value
+              let notes = invoiceForm.notes
+              if (month) {
+                const [y, m] = month.split('-').map(Number)
+                const label = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(y, m - 1, 1))
+                notes = `Faturamento referente ao mês de ${label}`
+              }
+              setInvoiceForm({ ...invoiceForm, referenceMonth: month, notes })
+            }}
+          />
+        </div>
         <div className="form-group"><label>Valor (R$) *</label><input type="number" step="0.01" min="0" className="form-control" value={invoiceForm.amount} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })} /></div>
-        <div className="form-group"><label>Vencimento *</label><input type="date" className="form-control" value={invoiceForm.dueDate} onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })} /></div>
+        <div className="form-group">
+          <label>Vencimento *</label>
+          <input
+            type="date"
+            className="form-control"
+            value={invoiceForm.dueDate}
+            min={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()}
+            onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+          />
+        </div>
         <div className="form-group"><label>Observações</label><input className="form-control" value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} /></div>
       </Modal>
     </div>
