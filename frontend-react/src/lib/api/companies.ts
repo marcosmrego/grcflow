@@ -1,9 +1,16 @@
 ﻿import { adminApiRequest } from './client'
 import type { Company, Invoice, User } from '../../types'
 
+type RawCompany = Omit<Company, 'isActive' | 'createdAt'> & { is_active: boolean; created_at: string }
+
+function normalizeCompany(raw: RawCompany): Company {
+  return { ...raw, isActive: raw.is_active, createdAt: raw.created_at }
+}
+
 export async function getCompanies(page = 1, limit = 50, search = ''): Promise<{ items: Company[]; pagination: { total: number; page: number; pages: number; limit: number } }> {
   const s = search ? `&search=${encodeURIComponent(search)}` : ''
-  return adminApiRequest(`/companies?page=${page}&limit=${limit}${s}`)
+  const res = await adminApiRequest<{ items: RawCompany[]; pagination: { total: number; page: number; pages: number; limit: number } }>(`/companies?page=${page}&limit=${limit}${s}`)
+  return { ...res, items: res.items.map(normalizeCompany) }
 }
 
 export async function getCompany(id: string): Promise<Company> {
@@ -54,7 +61,7 @@ export async function deleteCompanyInvoice(companyId: string, invoiceId: string)
   return adminApiRequest(`/companies/${companyId}/invoices/${invoiceId}`, { method: 'DELETE' })
 }
 
-export async function getLeads(page = 1, limit = 50, search = ''): Promise<{ items: Array<{ id: string; name: string; email: string; company?: string; message?: string; createdAt: string }>; pagination: { total: number; page: number; pages: number; limit: number } }> {
+export async function getLeads(page = 1, limit = 50, search = ''): Promise<{ items: Array<{ id: string; name: string; email: string; companyName?: string; phone?: string; message?: string; source?: string; createdAt: string }>; pagination: { total: number; page: number; pages: number; limit: number } }> {
   const s = search ? `&search=${encodeURIComponent(search)}` : ''
   return adminApiRequest(`/leads?page=${page}&limit=${limit}${s}`)
 }

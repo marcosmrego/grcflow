@@ -64,7 +64,7 @@ export function Leads() {
                   <tr key={lead.id}>
                     <td>{lead.name}</td>
                     <td>{lead.email}</td>
-                    <td>{lead.company ?? '—'}</td>
+                    <td>{lead.companyName ?? '—'}</td>
                     <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {lead.message ?? '—'}
                     </td>
