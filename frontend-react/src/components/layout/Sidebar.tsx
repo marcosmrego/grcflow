@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { checkHealth } from '../../lib/api/client'
 
@@ -37,12 +37,20 @@ export function Sidebar() {
             <span className="nav-icon">📚</span>
             Base de Conhecimento
           </NavLink>
+          <Link to="/knowledge?action=new" className="nav-sub-link">
+            <span className="nav-sub-icon">＋</span>
+            Novo Item
+          </Link>
         </li>
         <li>
           <NavLink to="/flows" className={navClass}>
             <span className="nav-icon">🔄</span>
             Fluxos
           </NavLink>
+          <Link to="/flows?action=new" className="nav-sub-link">
+            <span className="nav-sub-icon">＋</span>
+            Novo Fluxo
+          </Link>
         </li>
         {isAdmin() && (
           <>

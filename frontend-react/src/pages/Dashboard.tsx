@@ -8,7 +8,6 @@ import { StatCard } from '../components/ui/StatCard'
 import { Card, CardHeader, CardBody } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
-import { Button } from '../components/ui/Button'
 import { formatDateShort, getStatusLabel } from '../lib/utils'
 
 export function Dashboard() {
@@ -44,14 +43,6 @@ export function Dashboard() {
         <div>
           <h1>Dashboard</h1>
           <p className="subtitle">Bem-vindo, {user?.name ?? user?.email}!</p>
-        </div>
-        <div className="header-actions">
-          <Button onClick={() => navigate('/knowledge?action=new')} variant="primary">
-            + Nova Base
-          </Button>
-          <Button onClick={() => navigate('/flows?action=new')} variant="success">
-            + Novo Fluxo
-          </Button>
         </div>
       </div>
 

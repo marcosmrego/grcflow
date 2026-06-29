@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,6 +35,7 @@ type FormData = z.infer<typeof schema>
 export function Knowledge() {
   useDocumentTitle('Base de Conhecimento')
   const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -48,6 +50,13 @@ export function Knowledge() {
     const t = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(t)
   }, [search])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      setSearchParams({}, { replace: true })
+      setModalOpen(true)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: statsRes } = useQuery({ queryKey: ['knowledge-stats'], queryFn: getKnowledgeStats })
   const { data: towersRes } = useQuery({ queryKey: ['towers'], queryFn: getTowers })

@@ -1,4 +1,5 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -36,6 +37,7 @@ const TAB_STATUS = { Todos: '', Rascunho: 'draft', Publicado: 'published', Arqui
 export function Flows() {
   useDocumentTitle('Fluxos')
   const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Todos')
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -46,6 +48,13 @@ export function Flows() {
   const [addingStep, setAddingStep] = useState(false)
 
   const statusFilter = TAB_STATUS[activeTab]
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      setSearchParams({}, { replace: true })
+      setModalOpen(true)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: flowsRes, isLoading } = useQuery({
     queryKey: ['flows', statusFilter],

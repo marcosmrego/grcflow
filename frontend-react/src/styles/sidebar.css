@@ -151,6 +151,39 @@
   opacity: 1;
 }
 
+/* ------ Sub-link de acao (ex: "Novo Item", "Novo Fluxo") ------ */
+.nav-sub-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 1.25rem 0.3rem 3.1rem;
+  color: #4a4a4a;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  border-radius: 0 50px 50px 0;
+  transition: color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.1rem;
+}
+
+.nav-sub-link:hover {
+  color: #d4a520;
+  background: linear-gradient(90deg, #181818 0%, #141414 100%);
+}
+
+.nav-sub-icon {
+  font-size: 0.85rem;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  color: #b8860b;
+  line-height: 1;
+}
+
 /* ------ SeÃ§Ã£o de rodapÃ© da sidebar ------ */
 .navbar-footer {
   flex-shrink: 0;
@@ -313,6 +346,10 @@
   }
 
   .navbar-footer #user-info {
+    display: none;
+  }
+
+  .nav-sub-link {
     display: none;
   }
 
