@@ -1,5 +1,4 @@
-﻿import { apiRequest } from './client'
-import type { User } from '../../types'
+﻿import type { User } from '../../types'
 
 interface LoginResponse {
   success: boolean
@@ -11,11 +10,18 @@ interface LoginResponse {
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse['data']> {
-  const res = await apiRequest<LoginResponse>('/auth/login', {
+  const API_BASE = import.meta.env.VITE_API_URL ?? ''
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
     method: 'POST',
-    body: JSON.stringify({ email, password })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
   })
-  return res.data!
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as { error?: { message?: string } }).error?.message ?? 'Falha no login')
+  }
+  const json = await res.json() as LoginResponse
+  return json.data!
 }
 
 interface AdminLoginResponse {
