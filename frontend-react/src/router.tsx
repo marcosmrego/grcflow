@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { MainLayout } from './components/layout/MainLayout'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { LoadingSpinner } from './components/ui/LoadingSpinner'
+import { NotFound } from './pages/NotFound'
 
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })))
@@ -30,37 +31,46 @@ function withSuspense(element: React.ReactNode) {
 }
 
 export const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: withSuspense(<Login />),
-  },
-  {
-    path: '/landing',
-    element: withSuspense(<Landing />),
-  },
-  {
-    path: '/admin/login',
-    element: withSuspense(<AdminLogin />),
-  },
+  // Redirects from legacy Vanilla JS .html URLs
+  { path: '/login.html',                  element: <Navigate to="/login" replace /> },
+  { path: '/landing.html',                element: <Navigate to="/landing" replace /> },
+  { path: '/index.html',                  element: <Navigate to="/" replace /> },
+  { path: '/pages/knowledge.html',        element: <Navigate to="/knowledge" replace /> },
+  { path: '/pages/flows.html',            element: <Navigate to="/flows" replace /> },
+  { path: '/pages/users.html',            element: <Navigate to="/users" replace /> },
+  { path: '/pages/towers.html',           element: <Navigate to="/towers" replace /> },
+  { path: '/pages/configuracoes.html',    element: <Navigate to="/settings" replace /> },
+  { path: '/admin/login.html',            element: <Navigate to="/admin/login" replace /> },
+  { path: '/admin/companies.html',        element: <Navigate to="/admin/companies" replace /> },
+  { path: '/admin/company.html',          element: <Navigate to="/admin/companies" replace /> },
+  { path: '/admin/leads.html',            element: <Navigate to="/admin/leads" replace /> },
+
+  // App routes
+  { path: '/login',      element: withSuspense(<Login />) },
+  { path: '/landing',    element: withSuspense(<Landing />) },
+  { path: '/admin/login', element: withSuspense(<AdminLogin />) },
   {
     path: '/',
     element: <MainLayout />,
     children: [
-      { index: true, element: withSuspense(<Dashboard />) },
-      { path: 'knowledge', element: withSuspense(<Knowledge />) },
-      { path: 'flows', element: withSuspense(<Flows />) },
-      { path: 'users', element: withSuspense(<Users />) },
-      { path: 'towers', element: withSuspense(<Towers />) },
-      { path: 'settings', element: withSuspense(<Settings />) },
+      { index: true,             element: withSuspense(<Dashboard />) },
+      { path: 'knowledge',       element: withSuspense(<Knowledge />) },
+      { path: 'flows',           element: withSuspense(<Flows />) },
+      { path: 'users',           element: withSuspense(<Users />) },
+      { path: 'towers',          element: withSuspense(<Towers />) },
+      { path: 'settings',        element: withSuspense(<Settings />) },
     ],
   },
   {
     path: '/admin',
     element: <AdminLayout />,
     children: [
-      { path: 'companies', element: withSuspense(<Companies />) },
-      { path: 'companies/:id', element: withSuspense(<CompanyDetail />) },
-      { path: 'leads', element: withSuspense(<Leads />) },
+      { path: 'companies',      element: withSuspense(<Companies />) },
+      { path: 'companies/:id',  element: withSuspense(<CompanyDetail />) },
+      { path: 'leads',          element: withSuspense(<Leads />) },
     ],
   },
+
+  // 404 catch-all
+  { path: '*', element: <NotFound /> },
 ])
