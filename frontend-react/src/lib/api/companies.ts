@@ -1,5 +1,5 @@
 ﻿import { adminApiRequest } from './client'
-import type { BillingInvoice, BillingOverview, Company, Invoice, User } from '../../types'
+import type { BillingInvoice, BillingOverview, Company, Invoice, InvoiceActionLog, User } from '../../types'
 
 type RawCompany = Omit<
   Company,
@@ -143,6 +143,17 @@ export async function generateMonthlyInvoice(companyId: string, referenceMonth?:
 
 export async function deleteCompanyInvoice(companyId: string, invoiceId: string): Promise<void> {
   return adminApiRequest(`/companies/${companyId}/invoices/${invoiceId}`, { method: 'DELETE' })
+}
+
+export async function sendInvoiceEmail(
+  companyId: string,
+  invoiceId: string
+): Promise<{ invoice: Invoice; email: { sent: boolean; message: string } }> {
+  return adminApiRequest(`/companies/${companyId}/invoices/${invoiceId}/send-email`, { method: 'POST' })
+}
+
+export async function getInvoiceActionLogs(companyId: string, invoiceId: string): Promise<InvoiceActionLog[]> {
+  return adminApiRequest(`/companies/${companyId}/invoices/${invoiceId}/logs`)
 }
 
 export async function getLeads(page = 1, limit = 50, search = ''): Promise<{ items: Array<{ id: string; name: string; email: string; companyName?: string; phone?: string; message?: string; source?: string; createdAt: string }>; pagination: { total: number; page: number; pages: number; limit: number } }> {

@@ -572,6 +572,25 @@ migrations.push(`
   WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'demo@grcflow.local');
 `);
 
+migrations.push(`
+  ALTER TABLE company_invoices ADD COLUMN IF NOT EXISTS sent_at TIMESTAMP;
+`);
+
+migrations.push(`
+  CREATE TABLE IF NOT EXISTS invoice_action_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_id UUID NOT NULL REFERENCES company_invoices(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    action VARCHAR(50) NOT NULL,
+    performed_by UUID,
+    performed_by_name VARCHAR(255),
+    metadata JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_invoice_action_logs_invoice ON invoice_action_logs(invoice_id);
+  CREATE INDEX IF NOT EXISTS idx_invoice_action_logs_company ON invoice_action_logs(company_id);
+`);
+
 export async function runMigrations() {
   console.log('Running database migrations...');
   for (const migration of migrations) {

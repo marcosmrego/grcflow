@@ -6,7 +6,8 @@ import { useRequireSystemAdmin } from '../../hooks/useAuth'
 import {
   getCompany, updateCompany,
   getCompanyUsers, getCompanyModules, setCompanyModule,
-  getCompanyInvoices, createCompanyInvoice, deleteCompanyInvoice,
+  getCompanyInvoices, createCompanyInvoice, deleteCompanyInvoice, updateCompanyInvoice,
+  sendInvoiceEmail, getInvoiceActionLogs,
   createCompanyAdmin,
 } from '../../lib/api/companies'
 import { Card, CardHeader, CardBody } from '../../components/ui/Card'
@@ -16,7 +17,7 @@ import { Modal } from '../../components/ui/Modal'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { formatDateShort } from '../../lib/utils'
-import type { Company } from '../../types'
+import type { Company, InvoiceActionLog, Invoice } from '../../types'
 
 type Tab = 'data' | 'users' | 'modules' | 'invoices'
 
@@ -85,6 +86,8 @@ export function CompanyDetail() {
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [invoiceForm, setInvoiceForm] = useState({ referenceMonth: '', amount: '', dueDate: '', notes: '' })
   const [invoiceError, setInvoiceError] = useState<string | null>(null)
+  const [logTarget, setLogTarget] = useState<Invoice | null>(null)
+  const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null)
 
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['admin-company', id],
@@ -164,6 +167,27 @@ export function CompanyDetail() {
 
   const deleteInvoiceMutation = useMutation({
     mutationFn: (invoiceId: string) => deleteCompanyInvoice(id!, invoiceId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-company-invoices', id] }),
+  })
+
+  const sendEmailMutation = useMutation({
+    mutationFn: (invoiceId: string) => {
+      setSendingInvoiceId(invoiceId)
+      return sendInvoiceEmail(id!, invoiceId)
+    },
+    onSettled: () => setSendingInvoiceId(null),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-company-invoices', id] }),
+    onError: (err: Error) => alert(`Erro ao enviar e-mail: ${err.message}`),
+  })
+
+  const { data: actionLogs, isLoading: logsLoading } = useQuery<InvoiceActionLog[]>({
+    queryKey: ['invoice-logs', id, logTarget?.id],
+    queryFn: () => getInvoiceActionLogs(id!, logTarget!.id),
+    enabled: !!logTarget,
+  })
+
+  const markPaidMutation = useMutation({
+    mutationFn: (invoiceId: string) => updateCompanyInvoice(id!, invoiceId, { status: 'paid' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-company-invoices', id] }),
   })
 
@@ -418,17 +442,42 @@ export function CompanyDetail() {
           <CardBody>
             {invoicesLoading ? <LoadingSpinner /> : (
               <table className="table">
-                <thead><tr><th>Observações</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead>
+                <thead><tr><th>Observações</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>E-mail</th><th>Ações</th></tr></thead>
                 <tbody>
-                  {(invoicesData ?? []).map((inv) => (
-                    <tr key={inv.id}>
-                      <td>{inv.notes ?? '—'}</td>
-                      <td>R$ {Number(inv.amount).toFixed(2)}</td>
-                      <td>{formatDateShort(inv.dueDate)}</td>
-                      <td><Badge variant={inv.displayStatus === 'paid' ? 'success' : inv.displayStatus === 'overdue' ? 'danger' : 'warning'}>{inv.displayStatus}</Badge></td>
-                      <td><Button size="sm" variant="danger" onClick={() => deleteInvoiceMutation.mutate(inv.id)}>Excluir</Button></td>
-                    </tr>
-                  ))}
+                  {(invoicesData ?? []).map((inv) => {
+                    const hasEmail = !!company.contactEmail
+                    const isSending = sendingInvoiceId === inv.id
+                    return (
+                      <tr key={inv.id}>
+                        <td>{inv.notes ?? '—'}</td>
+                        <td>R$ {Number(inv.amount).toFixed(2)}</td>
+                        <td>{formatDateShort(inv.dueDate)}</td>
+                        <td><Badge variant={inv.displayStatus === 'paid' ? 'success' : inv.displayStatus === 'overdue' ? 'danger' : 'warning'}>{inv.displayStatus}</Badge></td>
+                        <td>
+                          {inv.sentAt ? (
+                            <div>
+                              <Badge variant="success">Enviado</Badge>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{formatDateShort(inv.sentAt)}</div>
+                              <Button size="sm" variant="outline" style={{ marginTop: '4px' }} loading={isSending} onClick={() => sendEmailMutation.mutate(inv.id)}>Reenviar</Button>
+                            </div>
+                          ) : (
+                            <Button size="sm" variant={hasEmail ? 'primary' : 'outline'} disabled={!hasEmail} loading={isSending} title={!hasEmail ? 'Sem e-mail de contato cadastrado' : ''} onClick={() => sendEmailMutation.mutate(inv.id)}>
+                              📧 Enviar
+                            </Button>
+                          )}
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            {(inv.displayStatus === 'pending' || inv.displayStatus === 'overdue') && (
+                              <Button size="sm" variant="success" onClick={() => markPaidMutation.mutate(inv.id)}>Pago</Button>
+                            )}
+                            <Button size="sm" variant="outline" title="Histórico" onClick={() => setLogTarget(inv)}>📋</Button>
+                            <Button size="sm" variant="danger" onClick={() => deleteInvoiceMutation.mutate(inv.id)}>✕</Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             )}
@@ -492,6 +541,40 @@ export function CompanyDetail() {
         </div>
         <div className="form-group"><label>Observações</label><input className="form-control" value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} /></div>
       </Modal>
+
+      {/* ─── MODAL HISTÓRICO ─── */}
+      {logTarget && (
+        <Modal
+          isOpen={!!logTarget}
+          title={`Histórico — ${logTarget.notes ?? logTarget.referenceMonth}`}
+          onClose={() => setLogTarget(null)}
+          footer={<Button variant="outline" onClick={() => setLogTarget(null)}>Fechar</Button>}
+        >
+          {logsLoading ? <LoadingSpinner /> : !actionLogs?.length ? (
+            <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Nenhum evento registrado.</p>
+          ) : (
+            <table className="table" style={{ fontSize: '0.82rem' }}>
+              <thead><tr><th>Data</th><th>Ação</th><th>Usuário</th><th>Info</th></tr></thead>
+              <tbody>
+                {actionLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatDateShort(log.createdAt)}</td>
+                    <td>
+                      <Badge variant={log.action === 'email_sent' ? 'success' : 'secondary'}>
+                        {log.action === 'email_sent' ? '📧 E-mail' : '📄 Gerado'}
+                      </Badge>
+                    </td>
+                    <td>{log.performedByName ?? '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {log.action === 'email_sent' && log.metadata ? String(log.metadata.to ?? '') : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Modal>
+      )}
     </div>
   )
 }

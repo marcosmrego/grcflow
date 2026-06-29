@@ -199,9 +199,21 @@ export interface CompanyInvoice {
   status: InvoiceStatus;
   displayStatus: InvoiceDisplayStatus;
   paidAt?: Date | null;
+  sentAt?: Date | null;
   notes?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface InvoiceActionLog {
+  id: string;
+  invoiceId: string;
+  companyId: string;
+  action: string;
+  performedById?: string | null;
+  performedByName?: string | null;
+  metadata?: Record<string, unknown> | null;
+  createdAt: Date;
 }
 
 // ============= AUTHENTICATION & AUTHORIZATION =============

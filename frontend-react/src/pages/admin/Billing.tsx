@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { useRequireSystemAdmin } from '../../hooks/useAuth'
-import { getBillingOverview, getBillingInvoices, updateCompanyInvoice } from '../../lib/api/companies'
+import { getBillingOverview, getBillingInvoices, updateCompanyInvoice, sendInvoiceEmail, getInvoiceActionLogs } from '../../lib/api/companies'
 import { Card, CardHeader, CardBody } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { EmptyState } from '../../components/ui/EmptyState'
-import type { BillingInvoice } from '../../types'
+import { Modal } from '../../components/ui/Modal'
+import type { BillingInvoice, InvoiceActionLog } from '../../types'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos os status' },
@@ -63,6 +64,8 @@ export function Billing() {
 
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
+  const [logTarget, setLogTarget] = useState<BillingInvoice | null>(null)
+  const [sendingId, setSendingId] = useState<string | null>(null)
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ['billing-overview'],
@@ -90,6 +93,22 @@ export function Billing() {
       qc.invalidateQueries({ queryKey: ['billing-invoices'] })
       qc.invalidateQueries({ queryKey: ['billing-overview'] })
     },
+  })
+
+  const sendEmailMutation = useMutation({
+    mutationFn: ({ companyId, invoiceId }: { companyId: string; invoiceId: string }) => {
+      setSendingId(invoiceId)
+      return sendInvoiceEmail(companyId, invoiceId)
+    },
+    onSettled: () => setSendingId(null),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['billing-invoices'] }),
+    onError: (err: Error) => alert(`Erro ao enviar e-mail: ${err.message}`),
+  })
+
+  const { data: actionLogs, isLoading: logsLoading } = useQuery<InvoiceActionLog[]>({
+    queryKey: ['invoice-logs', logTarget?.companyId, logTarget?.id],
+    queryFn: () => getInvoiceActionLogs(logTarget!.companyId, logTarget!.id),
+    enabled: !!logTarget,
   })
 
   const invoices: BillingInvoice[] = invoicesRes?.items ?? []
@@ -157,12 +176,14 @@ export function Billing() {
                   <th>Vencimento</th>
                   <th>Status</th>
                   <th>Pago em</th>
+                  <th>E-mail</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((inv) => {
                   const canAct = inv.displayStatus === 'pending' || inv.displayStatus === 'overdue'
+                  const isSending = sendingId === inv.id
                   return (
                     <tr key={inv.id}>
                       <td>{inv.companyName}</td>
@@ -172,26 +193,28 @@ export function Billing() {
                       <td>{statusBadge(inv.displayStatus)}</td>
                       <td>{formatDate(inv.paidAt)}</td>
                       <td>
-                        {canAct && (
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <Button
-                              size="sm"
-                              variant="success"
-                              onClick={() => markPaidMutation.mutate({ companyId: inv.companyId, invoiceId: inv.id })}
-                              loading={markPaidMutation.isPending}
-                            >
-                              Pago
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => cancelMutation.mutate({ companyId: inv.companyId, invoiceId: inv.id })}
-                              loading={cancelMutation.isPending}
-                            >
-                              Cancelar
-                            </Button>
+                        {inv.sentAt ? (
+                          <div>
+                            <Badge variant="success">Enviado</Badge>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{formatDate(inv.sentAt)}</div>
+                            <Button size="sm" variant="outline" style={{ marginTop: '4px' }} loading={isSending} onClick={() => sendEmailMutation.mutate({ companyId: inv.companyId, invoiceId: inv.id })}>Reenviar</Button>
                           </div>
+                        ) : (
+                          <Button size="sm" variant="primary" loading={isSending} onClick={() => sendEmailMutation.mutate({ companyId: inv.companyId, invoiceId: inv.id })}>
+                            📧 Enviar
+                          </Button>
                         )}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          {canAct && (
+                            <>
+                              <Button size="sm" variant="success" onClick={() => markPaidMutation.mutate({ companyId: inv.companyId, invoiceId: inv.id })} loading={markPaidMutation.isPending}>Pago</Button>
+                              <Button size="sm" variant="outline" onClick={() => cancelMutation.mutate({ companyId: inv.companyId, invoiceId: inv.id })} loading={cancelMutation.isPending}>Cancelar</Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="outline" title="Histórico" onClick={() => setLogTarget(inv)}>📋</Button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -201,6 +224,40 @@ export function Billing() {
           )}
         </CardBody>
       </Card>
+
+      {/* Modal Histórico */}
+      {logTarget && (
+        <Modal
+          isOpen={!!logTarget}
+          title={`Histórico — ${logTarget.companyName} / ${formatMonthRef(logTarget.referenceMonth)}`}
+          onClose={() => setLogTarget(null)}
+          footer={<Button variant="outline" onClick={() => setLogTarget(null)}>Fechar</Button>}
+        >
+          {logsLoading ? <LoadingSpinner /> : !actionLogs?.length ? (
+            <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Nenhum evento registrado.</p>
+          ) : (
+            <table className="table" style={{ fontSize: '0.82rem' }}>
+              <thead><tr><th>Data</th><th>Ação</th><th>Usuário</th><th>Info</th></tr></thead>
+              <tbody>
+                {actionLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(log.createdAt)}</td>
+                    <td>
+                      <Badge variant={log.action === 'email_sent' ? 'success' : 'secondary'}>
+                        {log.action === 'email_sent' ? '📧 E-mail' : '📄 Gerado'}
+                      </Badge>
+                    </td>
+                    <td>{log.performedByName ?? '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {log.action === 'email_sent' && log.metadata ? String(log.metadata.to ?? '') : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Modal>
+      )}
     </div>
   )
 }

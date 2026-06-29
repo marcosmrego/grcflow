@@ -2,6 +2,9 @@ import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { companyService } from '../services/CompanyService';
 import { userService } from '../services/UserService';
+import { companyRepository } from '../repositories/CompanyRepository';
+import { companyInvoiceRepository } from '../repositories/CompanyInvoiceRepository';
+import { sendInvoiceEmail } from '../services/EmailService';
 import {
   systemAuthMiddleware,
   requireSystemAdmin,
@@ -372,6 +375,14 @@ router.post(
       dueDate: req.body.dueDate,
       notes: req.body.notes,
     });
+    await companyInvoiceRepository.logAction({
+      invoiceId: invoice.id,
+      companyId: req.params.id,
+      action: 'generated',
+      performedById: req.systemUser?.id ?? null,
+      performedByName: req.systemUser?.name ?? req.systemUser?.email ?? null,
+      metadata: { source: 'company_detail', amount: invoice.amount, referenceMonth: req.body.referenceMonth },
+    });
     const response: ApiResponse<any> = { success: true, data: invoice };
     res.status(201).json(response);
   })
@@ -401,6 +412,74 @@ router.put(
     });
     const response: ApiResponse<any> = { success: true, data: invoice };
     res.json(response);
+  })
+);
+
+/**
+ * POST /api/companies/:id/invoices/:invoiceId/send-email
+ * Send invoice by email to the company's contact (system admin only)
+ */
+router.post(
+  '/:id/invoices/:invoiceId/send-email',
+  [
+    param('id').isUUID(),
+    param('invoiceId').isUUID(),
+  ],
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id: companyId, invoiceId } = req.params;
+
+    const [company, invoice] = await Promise.all([
+      companyRepository.findById(companyId),
+      companyInvoiceRepository.findById(invoiceId, companyId),
+    ]);
+
+    if (!company || !invoice) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Empresa ou fatura não encontrada' } });
+    }
+
+    const contactEmail = (company as any).contact_email as string | null;
+    if (!contactEmail) {
+      return res.status(422).json({ success: false, error: { code: 'NO_EMAIL', message: 'Nenhum e-mail de contato cadastrado para esta empresa' } });
+    }
+
+    const result = await sendInvoiceEmail({
+      to: contactEmail,
+      companyName: company.name,
+      contactName: (company as any).contact_name,
+      referenceMonth: invoice.referenceMonth,
+      amount: invoice.amount,
+      dueDate: invoice.dueDate,
+      notes: invoice.notes,
+    });
+
+    const updated = await companyInvoiceRepository.markSent(invoiceId, companyId);
+
+    await companyInvoiceRepository.logAction({
+      invoiceId,
+      companyId,
+      action: 'email_sent',
+      performedById: req.systemUser?.id ?? null,
+      performedByName: req.systemUser?.name ?? req.systemUser?.email ?? null,
+      metadata: { to: contactEmail, smtpConfigured: result.sent, result: result.message },
+    });
+
+    res.json({ success: true, data: { invoice: updated, email: result } });
+  })
+);
+
+/**
+ * GET /api/companies/:id/invoices/:invoiceId/logs
+ * Retrieve action log for an invoice (system admin only)
+ */
+router.get(
+  '/:id/invoices/:invoiceId/logs',
+  [
+    param('id').isUUID(),
+    param('invoiceId').isUUID(),
+  ],
+  asyncHandler(async (req: Request, res: Response) => {
+    const logs = await companyInvoiceRepository.getActionLogs(req.params.invoiceId);
+    res.json({ success: true, data: logs });
   })
 );
 

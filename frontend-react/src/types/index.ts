@@ -137,12 +137,23 @@ export interface Invoice {
   status: 'pending' | 'paid' | 'cancelled'
   displayStatus: 'pending' | 'paid' | 'cancelled' | 'overdue'
   paidAt?: string | null
+  sentAt?: string | null
   notes?: string | null
   createdAt: string
 }
 
 export interface BillingInvoice extends Invoice {
   companyName: string
+}
+
+export interface InvoiceActionLog {
+  id: string
+  invoiceId: string
+  companyId: string
+  action: string
+  performedByName?: string | null
+  metadata?: Record<string, unknown> | null
+  createdAt: string
 }
 
 export interface BillingOverview {

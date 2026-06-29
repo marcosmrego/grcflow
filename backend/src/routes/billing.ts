@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { systemAuthMiddleware, requireSystemAdmin, requireMaster, asyncHandler } from '../middleware';
 import { companyRepository } from '../repositories/CompanyRepository';
 import { companyService } from '../services/CompanyService';
+import { companyInvoiceRepository } from '../repositories/CompanyInvoiceRepository';
 import { db } from '../config/database';
 
 const router = express.Router();
@@ -72,7 +73,7 @@ router.get(
     const itemsResult = await db.query(
       `SELECT ci.id, ci.company_id, c.name AS company_name,
               ci.reference_month, ci.amount, ci.due_date,
-              ci.status, ci.paid_at, ci.notes, ci.created_at
+              ci.status, ci.paid_at, ci.sent_at, ci.notes, ci.created_at
        FROM company_invoices ci
        JOIN companies c ON ci.company_id = c.id
        ${where}
@@ -93,6 +94,7 @@ router.get(
         ? 'overdue'
         : row.status,
       paidAt: row.paid_at ?? null,
+      sentAt: row.sent_at ?? null,
       notes: row.notes ?? null,
       createdAt: row.created_at,
     }));
@@ -135,6 +137,15 @@ router.post(
       amount,
       dueDate: dueDate.toISOString().split('T')[0],
       notes: `Fatura mensal — ${monthLabel}`,
+    });
+
+    await companyInvoiceRepository.logAction({
+      invoiceId: invoice.id,
+      companyId: id,
+      action: 'generated',
+      performedById: (req as any).systemUser?.id ?? null,
+      performedByName: (req as any).systemUser?.name ?? (req as any).systemUser?.email ?? null,
+      metadata: { source: 'billing_panel', amount, referenceMonth: ref.toISOString().split('T')[0] },
     });
 
     res.status(201).json({ success: true, data: invoice });
