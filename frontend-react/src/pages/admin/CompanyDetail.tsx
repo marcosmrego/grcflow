@@ -102,7 +102,7 @@ export function CompanyDetail() {
               <table className="table">
                 <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Criado em</th></tr></thead>
                 <tbody>
-                  {(usersData?.data ?? []).map((u) => (
+                  {(usersData?.items ?? []).map((u) => (
                     <tr key={u.id}><td>{u.name}</td><td>{u.email}</td><td>{u.role}</td><td>{formatDateShort(u.createdAt)}</td></tr>
                   ))}
                 </tbody>
@@ -118,16 +118,16 @@ export function CompanyDetail() {
           <CardBody>
             {modulesLoading ? <LoadingSpinner /> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {(modulesData?.data ?? []).map((m) => (
-                  <div key={m.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)' }}>
+                {(modulesData ?? []).map((m) => (
+                  <div key={m.moduleKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)' }}>
                     <div>
                       <strong>{m.name}</strong>
-                      <code style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{m.key}</code>
+                      <code style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{m.moduleKey}</code>
                     </div>
                     <Button
                       size="sm"
                       variant={m.isActive ? 'danger' : 'success'}
-                      onClick={() => toggleModuleMutation.mutate({ key: m.key, isActive: !m.isActive })}
+                      onClick={() => toggleModuleMutation.mutate({ key: m.moduleKey, isActive: !m.isActive })}
                     >
                       {m.isActive ? 'Desativar' : 'Ativar'}
                     </Button>
@@ -147,7 +147,7 @@ export function CompanyDetail() {
               <table className="table">
                 <thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead>
                 <tbody>
-                  {(invoicesData?.data ?? []).map((inv) => (
+                  {(invoicesData ?? []).map((inv) => (
                     <tr key={inv.id}>
                       <td>{inv.description ?? '—'}</td>
                       <td>R$ {Number(inv.amount).toFixed(2)}</td>

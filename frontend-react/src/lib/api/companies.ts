@@ -1,10 +1,10 @@
 ﻿import { adminApiRequest } from './client'
 import type { Company, Invoice, User } from '../../types'
 
-type RawCompany = Omit<Company, 'isActive' | 'createdAt'> & { is_active: boolean; created_at: string }
+type RawCompany = Omit<Company, 'isActive' | 'createdAt' | 'slug'> & { is_active: boolean; created_at: string; slug?: string }
 
 function normalizeCompany(raw: RawCompany): Company {
-  return { ...raw, isActive: raw.is_active, createdAt: raw.created_at }
+  return { ...raw, slug: raw.slug ?? '', isActive: raw.is_active, createdAt: raw.created_at }
 }
 
 export async function getCompanies(page = 1, limit = 50, search = ''): Promise<{ items: Company[]; pagination: { total: number; page: number; pages: number; limit: number } }> {
@@ -14,7 +14,8 @@ export async function getCompanies(page = 1, limit = 50, search = ''): Promise<{
 }
 
 export async function getCompany(id: string): Promise<Company> {
-  return adminApiRequest(`/companies/${id}`)
+  const raw = await adminApiRequest<RawCompany>(`/companies/${id}`)
+  return normalizeCompany(raw)
 }
 
 export async function createCompany(data: { name: string; slug: string }): Promise<Company> {
@@ -29,15 +30,22 @@ export async function deleteCompany(id: string): Promise<void> {
   return adminApiRequest(`/companies/${id}`, { method: 'DELETE' })
 }
 
-export async function getCompanyUsers(companyId: string, page = 1, limit = 50): Promise<{ data: User[]; total: number }> {
-  return adminApiRequest(`/companies/${companyId}/users?page=${page}&limit=${limit}`)
+type RawUser = Omit<User, 'isActive' | 'createdAt'> & { is_active: boolean; created_at: string }
+
+function normalizeUser(raw: RawUser): User {
+  return { ...raw, isActive: raw.is_active, createdAt: raw.created_at }
+}
+
+export async function getCompanyUsers(companyId: string, page = 1, limit = 50): Promise<{ items: User[]; pagination: { total: number; page: number; pages: number; limit: number } }> {
+  const res = await adminApiRequest<{ items: RawUser[]; pagination: { total: number; page: number; pages: number; limit: number } }>(`/companies/${companyId}/users?page=${page}&limit=${limit}`)
+  return { ...res, items: res.items.map(normalizeUser) }
 }
 
 export async function createCompanyAdmin(companyId: string, data: { name: string; email: string; password: string }): Promise<User> {
   return adminApiRequest(`/companies/${companyId}/admin-user`, { method: 'POST', body: JSON.stringify(data) })
 }
 
-export async function getCompanyModules(companyId: string): Promise<{ data: Array<{ key: string; name: string; isActive: boolean }> }> {
+export async function getCompanyModules(companyId: string): Promise<Array<{ moduleKey: string; name: string; description?: string; isActive: boolean }>> {
   return adminApiRequest(`/companies/${companyId}/modules`)
 }
 
@@ -45,7 +53,7 @@ export async function setCompanyModule(companyId: string, moduleKey: string, dat
   return adminApiRequest(`/companies/${companyId}/modules/${moduleKey}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 
-export async function getCompanyInvoices(companyId: string): Promise<{ data: Invoice[] }> {
+export async function getCompanyInvoices(companyId: string): Promise<Invoice[]> {
   return adminApiRequest(`/companies/${companyId}/invoices`)
 }
 
